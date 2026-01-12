@@ -155,9 +155,9 @@ def analyze_revenue_congestion():
                     + merged_df["quarter_code"]
                     + ")",
                     hovertemplate=(
-                        "Dong: %{text}<br>"
-                        + "Sales: %{x:,.0f} Won<br>"
-                        + "Congestion: %{y:.1f}<br>"
+                        "행정동: %{text}<br>"
+                        + "매출: %{x:,.0f} 원<br>"
+                        + "혼잡도: %{y:.1f}<br>"
                         + "<extra></extra>"
                     ),
                     name=data["label"],
@@ -168,12 +168,12 @@ def analyze_revenue_congestion():
             )
 
             # Update axes titles
-            fig.update_xaxes(title_text="Total Sales (Won)", row=row, col=col)
-            fig.update_yaxes(title_text="Avg Congestion", row=row, col=col)
+            fig.update_xaxes(title_text="총 매출 (원)", row=row, col=col)
+            fig.update_yaxes(title_text="평균 혼잡도", row=row, col=col)
 
         # Update layout
         fig.update_layout(
-            title_text="Revenue vs Congestion by Time Range",
+            title_text="시간대별 매출 vs 혼잡도 상관관계",
             height=900,
             width=1400,
             showlegend=False,

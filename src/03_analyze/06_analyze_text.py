@@ -4,6 +4,7 @@ from collections import Counter
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import os
+import platform
 
 
 def analyze_and_visualize_text():
@@ -83,13 +84,20 @@ def analyze_and_visualize_text():
     output_dir = "output/plots"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Use a font that supports Korean. Mac usually has AppleGothic.
-    font_path = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-    if not os.path.exists(font_path):
-        font_path = "/System/Library/Fonts/AppleGothic.ttf"
+    # Font handling
+    system_name = platform.system()
+    if system_name == "Windows":
+        font_path = "C:/Windows/Fonts/malgun.ttf"
+        font_family = "Malgun Gothic"
+    elif system_name == "Darwin":
+        font_path = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
         if not os.path.exists(font_path):
-            # Try another common Korean font
-            font_path = "/System/Library/Fonts/Malgun Gothic.ttf"
+            font_path = "/System/Library/Fonts/AppleGothic.ttf"
+        font_family = "AppleGothic"
+    else:
+        # Linux or other, fallback
+        font_path = "malgun.ttf"  # Needs to be available
+        font_family = "Malgun Gothic"
 
     try:
         wc = WordCloud(
@@ -144,20 +152,15 @@ def analyze_and_visualize_text():
     )
 
     plt.figure(figsize=(10, 6))
-    # Matplotlib needs font setting for Korean
-    from matplotlib import rc
 
-    try:
-        rc("font", family="AppleGothic")
-    except:
-        pass
-
+    # Matplotlib font setting
+    plt.rcParams["font.family"] = font_family
     plt.rcParams["axes.unicode_minus"] = False
 
     plt.bar(neg_counts.keys(), neg_counts.values(), color="salmon")
-    plt.title("Frequency of Negative Keywords in Subway News")
-    plt.xlabel("Keyword")
-    plt.ylabel("Frequency")
+    plt.title("지하철 뉴스 주요 부정 키워드 빈도")
+    plt.xlabel("키워드")
+    plt.ylabel("빈도수")
 
     sentiment_output_path = os.path.join(output_dir, "sentiment_bar.png")
     plt.savefig(sentiment_output_path)

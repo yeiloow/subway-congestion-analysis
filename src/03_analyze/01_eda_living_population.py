@@ -43,20 +43,20 @@ df["total_living_pop"] = (
 )
 
 # Summary File
-summary_file = EDA_OUTPUT_DIR / "eda_summary.txt"
+summary_file = EDA_OUTPUT_DIR / "eda_summary.md"
 
-with open(summary_file, "w") as f:
-    f.write("# EDA Report: Dong Living Population\n\n")
+with open(summary_file, "w", encoding="utf-8") as f:
+    f.write("# 생활인구 데이터 분석 보고서 (Living Population)\n\n")
 
     # 2. Basic Info
-    f.write("## 1. Basic Info\n")
-    f.write(f"Total Rows: {len(df)}\n")
-    f.write(f"Total Columns: {len(df.columns)}\n")
-    f.write(f"Unique Dongs: {df['admin_dong_code'].nunique()}\n")
-    f.write(f"Date Range: {df['base_date'].min()} to {df['base_date'].max()}\n\n")
+    f.write("## 1. 기본 정보\n")
+    f.write(f"총 행 수: {len(df)}\n")
+    f.write(f"총 열 수: {len(df.columns)}\n")
+    f.write(f"고유 행정동 수: {df['admin_dong_code'].nunique()}\n")
+    f.write(f"데이터 기간: {df['base_date'].min()} ~ {df['base_date'].max()}\n\n")
 
     # 3. Aggregated Metrics
-    f.write("## 2. Population composition (Means)\n")
+    f.write("## 2. 인구 구성 (평균)\n")
     mean_pops = df[
         [
             "local_total_living_pop",
@@ -69,7 +69,7 @@ with open(summary_file, "w") as f:
     f.write("\n\n")
 
     # 4. Top Dongs by Population
-    f.write("## 3. Top 10 Dongs by Average Total Living Population\n")
+    f.write("## 3. 평균 총 생활인구 상위 10개 행정동\n")
     top_dongs = (
         df.groupby("admin_dong_code")["total_living_pop"]
         .mean()
@@ -84,7 +84,7 @@ with open(summary_file, "w") as f:
 logger.info("Generating visualizations...")
 
 # 1. Composition Pie Chart (Average)
-labels = ["Local", "Long-term Foreigner", "Short-term Foreigner"]
+labels = ["내국인", "장기체류 외국인", "단기체류 외국인"]
 values = [
     df["local_total_living_pop"].mean(),
     df["total_long_term"].mean(),
@@ -94,7 +94,7 @@ values = [
 fig1 = px.pie(
     names=labels,
     values=values,
-    title="Average Living Population Composition",
+    title="평균 생활인구 구성 비율",
     color_discrete_sequence=px.colors.qualitative.Pastel,
 )
 fig1.write_html(EDA_OUTPUT_DIR / "composition_pie.html")
@@ -113,7 +113,7 @@ fig2.add_trace(
     go.Scatter(
         x=time_trend["time_slot"],
         y=time_trend["local_total_living_pop"],
-        name="Local",
+        name="내국인",
         mode="lines+markers",
     ),
     secondary_y=False,
@@ -122,7 +122,7 @@ fig2.add_trace(
     go.Scatter(
         x=time_trend["time_slot"],
         y=time_trend["total_long_term"],
-        name="Long-term F",
+        name="장기체류 외국인",
         mode="lines+markers",
     ),
     secondary_y=True,
@@ -131,15 +131,15 @@ fig2.add_trace(
     go.Scatter(
         x=time_trend["time_slot"],
         y=time_trend["total_short_term"],
-        name="Short-term F",
+        name="단기체류 외국인",
         mode="lines+markers",
     ),
     secondary_y=True,
 )
 
-fig2.update_layout(title_text="Average Population by Time Slot")
-fig2.update_yaxes(title_text="Local Population", secondary_y=False)
-fig2.update_yaxes(title_text="Foreigner Population", secondary_y=True)
+fig2.update_layout(title_text="시간대별 평균 생활인구 변화")
+fig2.update_yaxes(title_text="내국인 수", secondary_y=False)
+fig2.update_yaxes(title_text="외국인 수", secondary_y=True)
 fig2.write_html(EDA_OUTPUT_DIR / "trend_time_slot.html")
 
 
@@ -151,7 +151,7 @@ male_sums = df[age_cols_male].mean()
 female_sums = df[age_cols_female].mean()
 
 age_labels = [
-    c.replace("local_male_", "").replace("_pop", "").replace("age_", "")
+    c.replace("local_male_", "").replace("_pop", "").replace("age_", "") + "세"
     for c in age_cols_male
 ]
 
@@ -160,29 +160,29 @@ fig3.add_trace(
     go.Bar(
         y=age_labels,
         x=-male_sums.values,
-        name="Male",
+        name="남성",
         orientation="h",
         marker=dict(color="cornflowerblue"),
         customdata=male_sums.values,
-        hovertemplate="%{y} - Male: %{customdata:.2f}<extra></extra>",
+        hovertemplate="%{y} - 남성: %{customdata:.2f}<extra></extra>",
     )
 )
 fig3.add_trace(
     go.Bar(
         y=age_labels,
         x=female_sums.values,
-        name="Female",
+        name="여성",
         orientation="h",
         marker=dict(color="lightpink"),
-        hovertemplate="%{y} - Female: %{x:.2f}<extra></extra>",
+        hovertemplate="%{y} - 여성: %{x:.2f}<extra></extra>",
     )
 )
 
 fig3.update_layout(
-    title="Local Living Population Pyramid (Average)",
+    title="내국인 생활인구 피라미드 (평균)",
     barmode="relative",
-    xaxis=dict(title="Average Population Count"),
-    yaxis=dict(title="Age Group"),
+    xaxis=dict(title="평균 인구 수"),
+    yaxis=dict(title="연령대"),
     autosize=False,
     width=800,
     height=600,
@@ -197,8 +197,8 @@ fig4 = px.histogram(
     df,
     x="total_living_pop",
     nbins=50,
-    title="Distribution of Total Living Population per Dong/Time",
-    labels={"total_living_pop": "Population"},
+    title="시간/행정동별 총 생활인구 분포",
+    labels={"total_living_pop": "생활인구 수"},
 )
 fig4.write_html(EDA_OUTPUT_DIR / "dist_total_living.html")
 

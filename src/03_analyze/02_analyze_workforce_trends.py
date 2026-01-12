@@ -21,7 +21,7 @@ def analyze_population_trends(input_path):
         df.groupby(["Year", "Quarter"])["총_직장_인구_수"].sum().reset_index()
     )
 
-    print("\n--- Quarterly Total Workforce Population (All Seoul) ---")
+    print("\n--- 서울 전체 분기별 총 직장인구 ---")
     print(quarterly_total)
 
     # Calculate Intra-year statistics
@@ -30,25 +30,23 @@ def analyze_population_trends(input_path):
     )
     yearly_stats["std_pct"] = (yearly_stats["std"] / yearly_stats["mean"]) * 100
 
-    print("\n--- Intra-Year Variation Statistics ---")
+    print("\n--- 연도별 변동성 통계 ---")
     print(yearly_stats)
 
     # Check for significant changes
     for year in yearly_stats.index:
         row = yearly_stats.loc[year]
         print(f"\nYear {year}:")
-        print(f"  Mean Population: {row['mean']:,.0f}")
-        print(f"  Min - Max Range: {row['min']:,.0f} - {row['max']:,.0f}")
-        print(f"  Standard Deviation: {row['std']:,.0f} ({row['std_pct']:.2f}%)")
+        print(f"  평균 인구: {row['mean']:,.0f}")
+        print(f"  최소 - 최대 범위: {row['min']:,.0f} - {row['max']:,.0f}")
+        print(f"  표준 편차: {row['std']:,.0f} ({row['std_pct']:.2f}%)")
 
         if row["std_pct"] < 1.0:
-            print(
-                "  -> Interpretation: Very stable within the year (less than 1% variation)."
-            )
+            print("  -> 해석: 연중 매우 안정적임 (변동폭 1% 미만).")
         elif row["std_pct"] < 5.0:
-            print("  -> Interpretation: Minor seasonal fluctuations.")
+            print("  -> 해석: 경미한 계절적 변동 있음.")
         else:
-            print("  -> Interpretation: Significant changes within the year.")
+            print("  -> 해석: 연중 유의미한 변화가 있음.")
 
     # 3. Visualization
     fig = px.line(
@@ -57,13 +55,13 @@ def analyze_population_trends(input_path):
         y="총_직장_인구_수",
         color="Year",
         markers=True,
-        title="Quarterly Total Workforce Population Trends",
-        labels={"총_직장_인구_수": "Total Workforce Population", "Quarter": "Quarter"},
+        title="분기별 총 직장인구 추이",
+        labels={"총_직장_인구_수": "총 직장인구 수", "Quarter": "분기", "Year": "연도"},
         height=600,
     )
     fig.update_layout(
         hovermode="x unified",
-        xaxis=dict(tickvals=[1, 2, 3, 4]),
+        xaxis=dict(tickvals=[1, 2, 3, 4], title="분기"),
     )
     output_html_path = "output/eda_workforce/yearly_trends.html"
     os.makedirs(os.path.dirname(output_html_path), exist_ok=True)
@@ -81,7 +79,7 @@ def analyze_population_trends(input_path):
     # Filter for valid std (at least 2 quarters of data)
     dong_variance = dong_variance.dropna()
 
-    print("\n--- Top 5 Dongs with Highest Intra-Year Variation (by Year) ---")
+    print("\n--- 연도별 변동성이 큰 상위 5개 행정동 ---")
     for year in df["Year"].unique():
         if year in dong_variance.index.get_level_values(0):
             top_var_dongs = (

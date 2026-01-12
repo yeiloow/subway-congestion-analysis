@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import platform
 import matplotlib.font_manager as fm
 import logging
 from src.utils.db_util import get_connection
@@ -14,23 +15,15 @@ logger = logging.getLogger(__name__)
 
 def set_korean_font():
     """Sets a Korean font for matplotlib to avoid broken characters."""
-    font_candidates = [
-        "AppleGothic",  # Mac
-        "Malgun Gothic",  # Windows
-        "NanumGothic",  # Linux/Custom
-    ]
+    system_name = platform.system()
+    if system_name == "Windows":
+        font_family = "Malgun Gothic"
+    elif system_name == "Darwin":
+        font_family = "AppleGothic"
+    else:
+        font_family = "Malgun Gothic"
 
-    found = False
-    for font_name in font_candidates:
-        if any(f.name == font_name for f in fm.fontManager.ttflist):
-            plt.rcParams["font.family"] = font_name
-            found = True
-            break
-
-    if not found:
-        if os.name == "posix":
-            plt.rcParams["font.family"] = "AppleGothic"
-
+    plt.rcParams["font.family"] = font_family
     plt.rcParams["axes.unicode_minus"] = False
 
 
@@ -112,9 +105,9 @@ def analyze_correlation():
             sns.scatterplot(
                 data=merged_df, x="floating_pop", y="avg_congestion", alpha=0.5, ax=ax
             )
-            ax.set_title(f"{label}\nCorr: {corr:.4f}")
-            ax.set_xlabel("Floating Pop")
-            ax.set_ylabel("Avg Congestion")
+            ax.set_title(f"{label}\n상관계수(r): {corr:.4f}")
+            ax.set_xlabel("유동인구")
+            ax.set_ylabel("평균 혼잡도")
             ax.grid(True, linestyle="--", alpha=0.5)
 
         # Remove empty last subplot if any (we have 5 plots, 6 slots)

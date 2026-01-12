@@ -10,6 +10,7 @@ import sqlite3
 import matplotlib.pyplot as plt
 from scipy import stats
 import logging
+import platform
 from src.utils.db_util import get_connection
 from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
 
@@ -19,6 +20,18 @@ logger = logging.getLogger(__name__)
 
 # Paths
 csv_path = OUTPUT_DIR / "station_catchment_stats.csv"
+
+# Set Korean Font
+system_name = platform.system()
+if system_name == "Darwin":  # Mac
+    font_family = "AppleGothic"
+elif system_name == "Windows":
+    font_family = "Malgun Gothic"
+else:
+    font_family = "Malgun Gothic"
+
+plt.rcParams["font.family"] = font_family
+plt.rcParams["axes.unicode_minus"] = False
 
 
 # Time slot mapping: 05:30 = 1, 06:00 = 2, etc. (30-minute intervals)
@@ -126,10 +139,10 @@ if df_merged.shape[0] == 0:
 else:
     # Features to analyze
     features_to_analyze = {
-        "total_area": "Total Building Area",
-        "total_households": "Total Households",
-        "total_families": "Total Families",
-        "building_types_count": "Building Type Diversity",
+        "total_area": "총 건물 연면적",
+        "total_households": "총 세대수",
+        "total_families": "총 거주가구수",
+        "building_types_count": "건물 용도 다양성",
     }
 
     # ============================================================
@@ -176,8 +189,9 @@ else:
     # Print summary for total_area (strongest predictor)
     logger.info("\nCorrelation by Time Slot (Total Building Area vs Congestion):")
     logger.info("-" * 60)
+    # Using the localized label
     area_results = df_time_slot_results[
-        df_time_slot_results["feature"] == "Total Building Area"
+        df_time_slot_results["feature"] == "총 건물 연면적"
     ]
     for _, row in area_results.iterrows():
         sig = (
@@ -208,7 +222,7 @@ else:
 
     weekday_weekend_results = []
     for is_weekend in [0, 1]:
-        day_type = "Weekend" if is_weekend else "Weekday"
+        day_type = "주말" if is_weekend else "평일"
         day_data = df_merged[df_merged["is_weekend"] == is_weekend]
 
         for feature, label in features_to_analyze.items():
@@ -248,7 +262,7 @@ else:
 
     direction_results = []
     for is_upline in [0, 1]:
-        direction = "Upline" if is_upline else "Downline"
+        direction = "상행" if is_upline else "하행"
         dir_data = df_merged[df_merged["is_upline"] == is_upline]
 
         for feature, label in features_to_analyze.items():
@@ -285,7 +299,7 @@ else:
     # Plot 1: Correlation by time of day
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     fig.suptitle(
-        "Correlation (Building vs Congestion) by Time of Day",
+        "시간대별 상관관계 (건물 특성 vs 혼잡도)",
         fontsize=16,
         fontweight="bold",
     )
@@ -317,8 +331,8 @@ else:
             label="p < 0.05",
         )
 
-        ax.set_xlabel("Time of Day", fontsize=10)
-        ax.set_ylabel("Pearson r", fontsize=10)
+        ax.set_xlabel("시간대", fontsize=10)
+        ax.set_ylabel("피어슨 상관계수 (r)", fontsize=10)
         ax.set_title(label, fontsize=12)
         ax.tick_params(axis="x", rotation=45)
         ax.grid(True, alpha=0.3)
@@ -335,7 +349,7 @@ else:
     # Plot 2: Scatter plots for peak hours vs off-peak
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
     fig.suptitle(
-        "Building Area vs Congestion: Peak vs Off-Peak Hours",
+        "건물 연면적 vs 혼잡도: 피크타임 vs 비-피크타임",
         fontsize=16,
         fontweight="bold",
     )
@@ -347,10 +361,10 @@ else:
     late_night = df_merged[df_merged["time_slot"] >= 35]  # ~23:00+
 
     periods = [
-        (morning_peak, "Morning Peak (07:00-09:00)"),
-        (evening_peak, "Evening Peak (18:00-20:00)"),
-        (off_peak, "Off-Peak (11:00-15:00)"),
-        (late_night, "Late Night (23:00+)"),
+        (morning_peak, "오전 피크 (07:00-09:00)"),
+        (evening_peak, "오후 피크 (18:00-20:00)"),
+        (off_peak, "비-피크 (11:00-15:00)"),
+        (late_night, "심야 (23:00+)"),
     ]
 
     for idx, (period_data, period_name) in enumerate(periods):
@@ -400,8 +414,8 @@ else:
                     bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
                 )
 
-        ax.set_xlabel("Total Building Area (m²)", fontsize=10)
-        ax.set_ylabel("Congestion Level", fontsize=10)
+        ax.set_xlabel("총 건물 연면적 (m²)", fontsize=10)
+        ax.set_ylabel("혼잡도", fontsize=10)
         ax.set_title(period_name, fontsize=12)
         ax.grid(True, alpha=0.3)
 
@@ -426,14 +440,14 @@ else:
     ax.set_yticks(range(len(pivot_data.index)))
     ax.set_yticklabels(pivot_data.index)
 
-    plt.colorbar(im, ax=ax, label="Pearson r")
+    plt.colorbar(im, ax=ax, label="피어슨 상관계수 (r)")
     ax.set_title(
-        "Correlation Heatmap: Building Features vs Congestion by Time",
+        "상관계수 히트맵: 건물 특성 vs 시간대별 혼잡도",
         fontsize=14,
         fontweight="bold",
     )
-    ax.set_xlabel("Building Feature")
-    ax.set_ylabel("Time of Day")
+    ax.set_xlabel("건물 특성")
+    ax.set_ylabel("시간대")
 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / "correlation_heatmap.png", dpi=300, bbox_inches="tight")
@@ -447,8 +461,9 @@ else:
     logger.info("=" * 60)
 
     # Find peak correlation times
+    # Using localized name
     area_results = df_time_slot_results[
-        df_time_slot_results["feature"] == "Total Building Area"
+        df_time_slot_results["feature"] == "총 건물 연면적"
     ]
     max_corr = area_results.loc[area_results["pearson_r"].idxmax()]
     min_corr = area_results.loc[area_results["pearson_r"].idxmin()]
