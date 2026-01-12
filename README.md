@@ -72,6 +72,34 @@ uv run python src/01_acquire/05_insert_estimated_revenue.py
     uv run python src/03_analyze/analyze_congestion_building_correlation.py
     ```
 
+## Hugging Face 데이터셋 연결
+
+이 프로젝트는 `data` 디렉토리를 Hugging Face Hub의 [alrq/subway](https://huggingface.co/datasets/alrq/subway) 데이터셋과 동기화하여 관리합니다.
+
+### 1. 인증
+
+먼저 Hugging Face 계정으로 로그인해야 합니다:
+
+```bash
+huggingface-cli login
+```
+
+### 2. 데이터 업로드 (Upload)
+
+로컬의 `data` 폴더 내용을 Hugging Face 저장소에 업로드합니다:
+
+```bash
+huggingface-cli upload alrq/subway data . --repo-type dataset
+```
+
+### 3. 데이터 다운로드 (Download)
+
+Hugging Face 저장소의 데이터를 로컬 `data` 폴더로 다운로드합니다:
+
+```bash
+huggingface-cli download alrq/subway --local-dir data --repo-type dataset
+```
+
 ## 데이터 출처 (Data Sources)
 -   **서울 열린데이터 광장**:
     -   서울시 생활인구 (행정동)
