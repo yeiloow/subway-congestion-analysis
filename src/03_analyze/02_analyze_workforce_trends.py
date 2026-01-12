@@ -92,5 +92,7 @@ def analyze_population_trends(input_path):
 
 
 if __name__ == "__main__":
-    input_csv = "output/서울시_상권분석서비스_직장인구_행정동_2023_2025.csv"
+    input_csv = (
+        "data/01_raw/07_openapi/서울시_상권분석서비스_직장인구_행정동_2023_2025.csv"
+    )
     analyze_population_trends(input_csv)

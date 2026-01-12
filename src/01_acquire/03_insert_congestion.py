@@ -214,7 +214,7 @@ def run_insert_congestion():
     # Or just *.csv but being specific is safer
 
     # Check if directory exists
-    raw_data_dir = DATA_DIR / "01_raw"
+    raw_data_dir = DATA_DIR / "01_raw/02_congenstion"
     if not raw_data_dir.exists():
         logger.error(f"Directory not found: {raw_data_dir}")
         return

@@ -9,10 +9,12 @@ logger = logging.getLogger(__name__)
 
 # Define file paths
 BASE_CSV_PATH = (
-    DATA_DIR / "01_raw/01_subway/서울교통공사_역주소 및 전화번호_20250318.csv"
+    DATA_DIR / "01_raw/01_subway_info/서울교통공사_역주소 및 전화번호_20250318.csv"
 )
-REF_CSV_PATH = DATA_DIR / "01_raw/01_subway/역사마스터정보.csv"
-DONG_POP_CSV_PATH = OUTPUT_DIR / "서울시_상권분석서비스_직장인구_행정동_2023_2025.csv"
+REF_CSV_PATH = DATA_DIR / "01_raw/01_subway_info/역사마스터정보.csv"
+DONG_POP_CSV_PATH = (
+    DATA_DIR / "01_raw/07_openapi/서울시_상권분석서비스_직장인구_행정동_2023_2025.csv"
+)
 
 
 def load_reference_data():
