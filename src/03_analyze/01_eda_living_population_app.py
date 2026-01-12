@@ -157,7 +157,7 @@ fig_top = px.bar(
     labels={"total_living_pop": "평균 총 생활인구", "admin_dong_name": "행정동"},
 )
 fig_top.update_layout(yaxis={"categoryorder": "total ascending"})
-st.plotly_chart(fig_top, use_container_width=True)
+st.plotly_chart(fig_top, width="stretch")
 
 
 # 5. Visualizations
@@ -206,7 +206,7 @@ fig_time.update_layout(title="시간대별 인구 추이 (평균)", hovermode="x
 fig_time.update_xaxes(title="시간대 (Time Slot)")
 fig_time.update_yaxes(title="내국인 수", secondary_y=False)
 fig_time.update_yaxes(title="외국인 수", secondary_y=True)
-st.plotly_chart(fig_time, use_container_width=True)
+st.plotly_chart(fig_time, width="stretch")
 
 # 5.2 Population Pyramid (Age/Gender)
 st.subheader("2. 내국인 인구 피라미드 (평균)")
@@ -267,7 +267,7 @@ if age_cols_male and age_cols_female:
         bargap=0.1,
         xaxis=dict(title="인구 수 (왼쪽: 남성, 오른쪽: 여성)", tickformat="s"),
     )
-    st.plotly_chart(fig_pyr, use_container_width=True)
+    st.plotly_chart(fig_pyr, width="stretch")
 
 # 5.3 Composition Pie
 st.subheader("3. 생활인구 구성 비율")
@@ -282,7 +282,7 @@ fig_pie = px.pie(
     title="생활인구 구성 (내국인 vs 외국인)",
     color_discrete_sequence=px.colors.qualitative.Pastel,
 )
-st.plotly_chart(fig_pie, use_container_width=True)
+st.plotly_chart(fig_pie, width="stretch")
 
 # 5.4 Correlation Heatmap
 st.subheader("4. 주요 변수 상관관계")
@@ -303,7 +303,7 @@ if len(filtered_df) > 1:
         color_continuous_scale="RdBu_r",
         origin="lower",
     )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    st.plotly_chart(fig_heatmap, width="stretch")
 
 st.markdown("---")
 st.markdown("Developed for **Subway Congestion Analysis Project**")

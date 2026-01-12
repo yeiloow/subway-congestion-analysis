@@ -197,7 +197,7 @@ with tab3:
         title="호선별 평균 비교",
         labels={"total_area": "평균 건물 연면적", "congestion_level": "평균 혼잡도"},
     )
-    st.plotly_chart(fig_bubble, use_container_width=True)
+    st.plotly_chart(fig_bubble, width="stretch")
 
 # Tab 4: Report
 with tab4:

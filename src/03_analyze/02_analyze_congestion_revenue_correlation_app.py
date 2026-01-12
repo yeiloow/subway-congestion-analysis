@@ -201,7 +201,7 @@ if viz_mode == "모두 보기 (Grid)":
     fig.update_layout(
         height=400 * rows, title_text="시간대별 매출 vs 혼잡도", showlegend=False
     )
-    st.plotly_chart(fig, use_container_width=True   )
+    st.plotly_chart(fig, width="stretch")
 
 else:
     tabs = st.tabs([d["label"] for d in data_list])
@@ -236,7 +236,7 @@ else:
                 yaxis_title="평균 혼잡도 (%)",
                 height=600,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
 st.markdown("---")
 st.markdown("Developed for **Subway Congestion Analysis Project**")

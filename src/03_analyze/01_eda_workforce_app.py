@@ -154,7 +154,7 @@ def main():
             text_auto=".2s",
         )
         fig_top10.update_layout(yaxis={"categoryorder": "total ascending"})
-        st.plotly_chart(fig_top10, use_container_width=True)
+        st.plotly_chart(fig_top10, width="stretch")
 
     # 6.2 Distribution Histogram
     st.subheader("2. 행정동별 총 직장인구 분포")
@@ -167,7 +167,7 @@ def main():
             labels={"total_pop": "총 직장인구"},
             marginal="box",  # Adds a box plot at the top
         )
-        st.plotly_chart(fig_hist, use_container_width=True)
+        st.plotly_chart(fig_hist, width="stretch")
 
     # 6.3 Population Pyramid
     st.subheader("3. 전체 직장인구 인구 피라미드")
@@ -255,7 +255,7 @@ def main():
         # Simpler approach for axes labels: just rely on hover and absolute values in text
         fig_pyramid.update_xaxes(title="인구 수", tickformat="s", showticklabels=True)
 
-        st.plotly_chart(fig_pyramid, use_container_width=True)
+        st.plotly_chart(fig_pyramid, width="stretch")
 
     # 6.4 Gender Ratio Pie
     st.subheader("4. 전체 성별 비율")
@@ -271,7 +271,7 @@ def main():
             color=["남성", "여성"],
             color_discrete_map={"남성": "skyblue", "여성": "lightpink"},
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width="stretch")
 
     # 6.5 Correlation Heatmap
     st.subheader("5. 주요 변수 간 상관관계")
@@ -299,7 +299,7 @@ def main():
             color_continuous_scale="RdBu_r",
             origin="lower",
         )
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+        st.plotly_chart(fig_heatmap, width="stretch")
     else:
         st.info("상관관계를 분석할 충분한 숫자형 컬럼이 선택되지 않았습니다.")
 

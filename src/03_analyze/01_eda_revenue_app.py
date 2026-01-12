@@ -112,7 +112,7 @@ with col_top_l:
         text_auto=".2s",
     )
     fig_top_dongs.update_layout(yaxis={"categoryorder": "total ascending"})
-    st.plotly_chart(fig_top_dongs, use_container_width=True)
+    st.plotly_chart(fig_top_dongs, width="stretch")
 
 with col_top_r:
     st.subheader("매출 상위 10개 업종")
@@ -133,7 +133,7 @@ with col_top_r:
         text_auto=".2s",
     )
     fig_top_svc.update_layout(yaxis={"categoryorder": "total ascending"})
-    st.plotly_chart(fig_top_svc, use_container_width=True)
+    st.plotly_chart(fig_top_svc, width="stretch")
 
 # 5. Temporal Analysis
 st.header("🕒 시계열 및 요일 분석")
@@ -156,7 +156,7 @@ day_df = pd.DataFrame({"Day": day_labels, "Sales": day_data.values})
 
 with col_day_1:
     fig_day = px.bar(day_df, x="Day", y="Sales", title="요일별 총 매출", color="Day")
-    st.plotly_chart(fig_day, use_container_width=True)
+    st.plotly_chart(fig_day, width="stretch")
 
 # Time Slot
 time_cols = [c for c in df.columns if "time_" in c and "_sales_amt" in c]
@@ -177,7 +177,7 @@ with col_day_2:
         title="시간대별 총 매출",
         groupnorm=None,
     )
-    st.plotly_chart(fig_time, use_container_width=True)
+    st.plotly_chart(fig_time, width="stretch")
 
 
 # 6. Demographics (Gender/Age)
@@ -195,7 +195,7 @@ with col_dem_1:
         title="성별 매출 기여도",
         color_discrete_sequence=["skyblue", "lightpink"],
     )
-    st.plotly_chart(fig_gender, use_container_width=True)
+    st.plotly_chart(fig_gender, width="stretch")
 
 # Age
 with col_dem_2:
@@ -211,7 +211,7 @@ with col_dem_2:
     fig_age = px.bar(
         age_df, x="Age", y="Sales", title="연령대별 매출 기여도", color="Sales"
     )
-    st.plotly_chart(fig_age, use_container_width=True)
+    st.plotly_chart(fig_age, width="stretch")
 
 # 7. Correlation
 st.subheader("🔗 주요 변수 상관관계")
@@ -230,7 +230,7 @@ if len(filtered_df) > 1:
         title="매출 및 요일 변수 상관관계",
         color_continuous_scale="RdBu_r",
     )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    st.plotly_chart(fig_heatmap, width="stretch")
 
 st.markdown("---")
 st.markdown("Developed for **Subway Congestion Analysis Project**")
