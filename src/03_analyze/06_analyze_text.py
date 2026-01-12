@@ -2,9 +2,13 @@ import pandas as pd
 from kiwipiepy import Kiwi
 from collections import Counter
 from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 import os
-import platform
+import plotly.express as px
+from src.utils.visualization import save_plot, apply_theme, get_font_path
+from src.utils.config import OUTPUT_DIR
+
+# Apply Theme
+apply_theme()
 
 
 def analyze_and_visualize_text():
@@ -16,6 +20,7 @@ def analyze_and_visualize_text():
     data_path = "data/news_data.csv"
     if not os.path.exists(data_path):
         print(f"Data file not found at {data_path}. Please run crawl_news.py first.")
+        # Create dummy data for testing if verification needs it? No, just return.
         return
 
     df = pd.read_csv(data_path)
@@ -36,11 +41,10 @@ def analyze_and_visualize_text():
     tokens = kiwi.tokenize(full_text)
 
     # Filter for Nouns
-    # Tag list: https://github.com/bab2min/kiwipiepy
     noun_tags = {"NNG", "NNP", "NR", "NP"}
     nouns = [t.form for t in tokens if t.tag in noun_tags]
 
-    # Filter stopwords and single-character words
+    # Filter stopwords
     stopwords = [
         "지하철",
         "서울",
@@ -81,23 +85,14 @@ def analyze_and_visualize_text():
     print(f"Top 10 words: {top_n[:10]}")
 
     # 3. Generate WordCloud
-    output_dir = "output/plots"
-    os.makedirs(output_dir, exist_ok=True)
+    # For WordCloud, we still use matplotlib backend logic to generate image, but save it directly.
+    output_dir = OUTPUT_DIR / "plots"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Font handling
-    system_name = platform.system()
-    if system_name == "Windows":
-        font_path = "C:/Windows/Fonts/malgun.ttf"
-        font_family = "Malgun Gothic"
-    elif system_name == "Darwin":
-        font_path = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-        if not os.path.exists(font_path):
-            font_path = "/System/Library/Fonts/AppleGothic.ttf"
-        font_family = "AppleGothic"
-    else:
-        # Linux or other, fallback
-        font_path = "malgun.ttf"  # Needs to be available
-        font_family = "Malgun Gothic"
+    font_path = get_font_path()
+    if not font_path:
+        print("Warning: Korean font not found. WordCloud might look broken.")
+        font_path = "arial"  # Fallback
 
     try:
         wc = WordCloud(
@@ -105,18 +100,15 @@ def analyze_and_visualize_text():
         )
         wc.generate_from_frequencies(dict(top_n))
 
-        plt.figure(figsize=(10, 8))
-        plt.imshow(wc, interpolation="bilinear")
-        plt.axis("off")
-        wc_output_path = os.path.join(output_dir, "wc_subway.png")
-        plt.savefig(wc_output_path)
+        # Save WordCloud as Image (Standard for WordCloud)
+        wc_output_path = output_dir / "wc_subway.png"
+        wc.to_file(str(wc_output_path))
         print(f"WordCloud saved to {wc_output_path}")
-        plt.close()
-    except Exception as e:
-        print(f"WordCloud generation failed (font issue?): {e}")
 
-    # 4. Simple "Sentiment" Analysis (Keyword Counting)
-    # Define negative keywords related to subway issues
+    except Exception as e:
+        print(f"WordCloud generation failed: {e}")
+
+    # 4. Simple "Sentiment" Analysis (Keyword Counting) -> Plotly Bar Chart
     negative_keywords = [
         "지연",
         "시위",
@@ -144,28 +136,24 @@ def analyze_and_visualize_text():
     ]
 
     neg_counts = {k: full_text.count(k) for k in negative_keywords}
-    pos_counts = {k: full_text.count(k) for k in positive_keywords}
 
-    # Sort for plotting
-    neg_counts = dict(
-        sorted(neg_counts.items(), key=lambda item: item[1], reverse=True)
+    # Create DataFrame for Plotly
+    df_sentiment = pd.DataFrame(list(neg_counts.items()), columns=["Keyword", "Count"])
+    df_sentiment = df_sentiment.sort_values(by="Count", ascending=False)
+
+    # Plotly Bar Chart
+    fig = px.bar(
+        df_sentiment,
+        x="Keyword",
+        y="Count",
+        title="지하철 뉴스 주요 부정 키워드 빈도",
+        color="Count",
+        color_continuous_scale="Reds",
     )
 
-    plt.figure(figsize=(10, 6))
-
-    # Matplotlib font setting
-    plt.rcParams["font.family"] = font_family
-    plt.rcParams["axes.unicode_minus"] = False
-
-    plt.bar(neg_counts.keys(), neg_counts.values(), color="salmon")
-    plt.title("지하철 뉴스 주요 부정 키워드 빈도")
-    plt.xlabel("키워드")
-    plt.ylabel("빈도수")
-
-    sentiment_output_path = os.path.join(output_dir, "sentiment_bar.png")
-    plt.savefig(sentiment_output_path)
+    sentiment_output_path = OUTPUT_DIR / "sentiment_bar.html"
+    save_plot(fig, sentiment_output_path)
     print(f"Sentiment Analysis plot saved to {sentiment_output_path}")
-    plt.close()
 
 
 if __name__ == "__main__":

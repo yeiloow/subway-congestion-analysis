@@ -1,10 +1,13 @@
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import os
 import logging
 from src.utils.db_util import get_connection
-from src.utils.config import PLOTS_DIR, LOG_FORMAT, LOG_LEVEL
+from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
+from src.utils.visualization import save_plot, apply_theme
+
+# Apply Theme
+apply_theme()
 
 # Configure Logging
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
@@ -177,11 +180,11 @@ def analyze_revenue_congestion():
             height=900,
             width=1400,
             showlegend=False,
-            template="plotly_white",
+            # template settings handled by apply_theme()
         )
 
-        output_path = PLOTS_DIR / "revenue_vs_congestion_by_time.html"
-        fig.write_html(str(output_path))
+        output_path = OUTPUT_DIR / "revenue_vs_congestion_by_time.html"
+        save_plot(fig, output_path)
         logger.info(f"\nInteractive plot saved to {output_path}")
 
     except Exception as e:

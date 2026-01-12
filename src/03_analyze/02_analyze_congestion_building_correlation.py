@@ -6,13 +6,17 @@ Analysis by time slot (not averaged)
 
 import pandas as pd
 import numpy as np
-import sqlite3
-import matplotlib.pyplot as plt
 from scipy import stats
 import logging
-import platform
+import sqlite3
+import plotly.express as px
+import plotly.graph_objects as go
 from src.utils.db_util import get_connection
 from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
+from src.utils.visualization import save_plot, apply_theme
+
+# Apply Plotly Theme
+apply_theme()
 
 # Configure Logging
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
@@ -20,18 +24,6 @@ logger = logging.getLogger(__name__)
 
 # Paths
 csv_path = OUTPUT_DIR / "station_catchment_stats.csv"
-
-# Set Korean Font
-system_name = platform.system()
-if system_name == "Darwin":  # Mac
-    font_family = "AppleGothic"
-elif system_name == "Windows":
-    font_family = "Malgun Gothic"
-else:
-    font_family = "Malgun Gothic"
-
-plt.rcParams["font.family"] = font_family
-plt.rcParams["axes.unicode_minus"] = False
 
 
 # Time slot mapping: 05:30 = 1, 06:00 = 2, etc. (30-minute intervals)
@@ -55,7 +47,6 @@ df_buildings = pd.read_csv(csv_path)
 
 logger.info(f"Building data shape: {df_buildings.shape}")
 logger.info(f"Columns: {df_buildings.columns.tolist()}")
-logger.info(f"\nSample building data:\n{df_buildings.head(10)}")
 
 # Connect to database
 logger.info("Connecting to database...")
@@ -91,8 +82,6 @@ conn.close()
 df_congestion["time_label"] = df_congestion["time_slot"].apply(time_slot_to_label)
 
 logger.info(f"Congestion data shape: {df_congestion.shape}")
-logger.info(f"Unique time slots: {sorted(df_congestion['time_slot'].unique())}")
-logger.info(f"\nSample congestion data:\n{df_congestion.head(10)}")
 
 # Aggregate building data by station and line
 logger.info("\nAggregating building data by station and line...")
@@ -101,9 +90,6 @@ df_buildings_agg = (
     .agg({"total_area": "sum", "total_households": "sum", "total_families": "sum"})
     .reset_index()
 )
-
-logger.info(f"Aggregated building data shape: {df_buildings_agg.shape}")
-logger.info(df_buildings_agg.head(10))
 
 # Also calculate building diversity (number of different usage types per station)
 building_diversity = (
@@ -126,16 +112,10 @@ df_merged = df_buildings_agg.merge(
 )
 
 logger.info(f"Merged data shape: {df_merged.shape}")
-logger.info(df_merged.head(10))
 
 if df_merged.shape[0] == 0:
     logger.error("ERROR: No matching data found between buildings and congestion!")
-    logger.error(
-        f"\nStation IDs in buildings data: {df_buildings_agg['station_id'].unique()[:20]}"
-    )
-    logger.error(
-        f"Station IDs in congestion data: {df_congestion['station_id'].unique()[:20]}"
-    )
+    exit(1)
 else:
     # Features to analyze
     features_to_analyze = {
@@ -214,244 +194,62 @@ else:
     )
 
     # ============================================================
-    # 2. CORRELATION BY WEEKDAY VS WEEKEND
-    # ============================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("CORRELATION ANALYSIS: WEEKDAY VS WEEKEND")
-    logger.info("=" * 60)
-
-    weekday_weekend_results = []
-    for is_weekend in [0, 1]:
-        day_type = "주말" if is_weekend else "평일"
-        day_data = df_merged[df_merged["is_weekend"] == is_weekend]
-
-        for feature, label in features_to_analyze.items():
-            if feature in day_data.columns:
-                valid_data = day_data[[feature, "congestion_level"]].dropna()
-
-                if len(valid_data) > 2:
-                    pearson_r, pearson_p = stats.pearsonr(
-                        valid_data[feature], valid_data["congestion_level"]
-                    )
-
-                    weekday_weekend_results.append(
-                        {
-                            "day_type": day_type,
-                            "feature": label,
-                            "pearson_r": pearson_r,
-                            "pearson_p": pearson_p,
-                            "n_samples": len(valid_data),
-                        }
-                    )
-
-                    logger.info(
-                        f"  {day_type} - {label}: r={pearson_r:.4f}, p={pearson_p:.4f}"
-                    )
-
-    df_weekday_weekend = pd.DataFrame(weekday_weekend_results)
-    df_weekday_weekend.to_csv(
-        OUTPUT_DIR / "correlation_weekday_weekend.csv", index=False
-    )
-
-    # ============================================================
-    # 3. CORRELATION BY DIRECTION (UPLINE VS DOWNLINE)
-    # ============================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("CORRELATION ANALYSIS: UPLINE VS DOWNLINE")
-    logger.info("=" * 60)
-
-    direction_results = []
-    for is_upline in [0, 1]:
-        direction = "상행" if is_upline else "하행"
-        dir_data = df_merged[df_merged["is_upline"] == is_upline]
-
-        for feature, label in features_to_analyze.items():
-            if feature in dir_data.columns:
-                valid_data = dir_data[[feature, "congestion_level"]].dropna()
-
-                if len(valid_data) > 2:
-                    pearson_r, pearson_p = stats.pearsonr(
-                        valid_data[feature], valid_data["congestion_level"]
-                    )
-
-                    direction_results.append(
-                        {
-                            "direction": direction,
-                            "feature": label,
-                            "pearson_r": pearson_r,
-                            "pearson_p": pearson_p,
-                            "n_samples": len(valid_data),
-                        }
-                    )
-
-                    logger.info(
-                        f"  {direction} - {label}: r={pearson_r:.4f}, p={pearson_p:.4f}"
-                    )
-
-    df_direction = pd.DataFrame(direction_results)
-    df_direction.to_csv(OUTPUT_DIR / "correlation_by_direction.csv", index=False)
-
-    # ============================================================
-    # 4. VISUALIZATIONS
+    # 4. VISUALIZATIONS (Plotly Refactor)
     # ============================================================
     logger.info("\nGenerating visualizations...")
 
-    # Plot 1: Correlation by time of day
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle(
-        "시간대별 상관관계 (건물 특성 vs 혼잡도)",
-        fontsize=16,
-        fontweight="bold",
+    # Plot 1: Correlation by time of day (Line Plot)
+    fig1 = px.line(
+        df_time_slot_results,
+        x="time_label",
+        y="pearson_r",
+        color="feature",
+        markers=True,
+        title="시간대별 상관관계 (건물 특성 vs 혼잡도)",
     )
-
-    for idx, (feature, label) in enumerate(features_to_analyze.items()):
-        row = idx // 2
-        col = idx % 2
-        ax = axes[row, col]
-
-        feature_data = df_time_slot_results[df_time_slot_results["feature"] == label]
-
-        ax.plot(
-            feature_data["time_label"],
-            feature_data["pearson_r"],
-            marker="o",
-            linewidth=2,
-            markersize=6,
-        )
-        ax.axhline(y=0, color="gray", linestyle="--", alpha=0.5)
-
-        # Highlight significant correlations
-        sig_mask = feature_data["pearson_p"] < 0.05
-        ax.scatter(
-            feature_data[sig_mask]["time_label"],
-            feature_data[sig_mask]["pearson_r"],
-            color="red",
-            s=100,
-            zorder=5,
-            label="p < 0.05",
-        )
-
-        ax.set_xlabel("시간대", fontsize=10)
-        ax.set_ylabel("피어슨 상관계수 (r)", fontsize=10)
-        ax.set_title(label, fontsize=12)
-        ax.tick_params(axis="x", rotation=45)
-        ax.grid(True, alpha=0.3)
-        ax.legend(loc="upper right")
-
-    plt.tight_layout()
-    plt.savefig(
-        OUTPUT_DIR / "correlation_by_time_slot.png", dpi=300, bbox_inches="tight"
-    )
-    logger.info(
-        f"✓ Time slot visualization saved to {OUTPUT_DIR / 'correlation_by_time_slot.png'}"
-    )
+    fig1.update_yaxes(title="피어슨 상관계수 (r)")
+    fig1.update_xaxes(title="시간대")
+    save_plot(fig1, OUTPUT_DIR / "correlation_by_time_slot.html")
 
     # Plot 2: Scatter plots for peak hours vs off-peak
-    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
-    fig.suptitle(
-        "건물 연면적 vs 혼잡도: 피크타임 vs 비-피크타임",
-        fontsize=16,
-        fontweight="bold",
+    # Define peak hours
+    morning_peak = df_merged[df_merged["time_slot"].between(5, 8)].copy()
+    morning_peak["Period"] = "오전 피크 (07:00-09:00)"
+
+    evening_peak = df_merged[df_merged["time_slot"].between(26, 30)].copy()
+    evening_peak["Period"] = "오후 피크 (18:00-20:00)"
+
+    off_peak = df_merged[df_merged["time_slot"].between(12, 20)].copy()
+    off_peak["Period"] = "비-피크 (11:00-15:00)"
+
+    combined_scatter = pd.concat([morning_peak, evening_peak, off_peak])
+
+    fig2 = px.scatter(
+        combined_scatter,
+        x="total_area",
+        y="congestion_level",
+        color="Period",
+        # trendline="ols", # Removed due to missing statsmodels
+        facet_col="Period",
+        opacity=0.4,
+        title="건물 연면적 vs 혼잡도: 피크타임 vs 비-피크타임 비교",
     )
+    save_plot(fig2, OUTPUT_DIR / "correlation_peak_offpeak.html")
 
-    # Define peak hours (morning rush 7-9, evening rush 18-20)
-    morning_peak = df_merged[df_merged["time_slot"].between(4, 8)]  # ~07:00-09:00
-    evening_peak = df_merged[df_merged["time_slot"].between(26, 30)]  # ~18:00-20:00
-    off_peak = df_merged[df_merged["time_slot"].between(12, 20)]  # ~11:00-15:00
-    late_night = df_merged[df_merged["time_slot"] >= 35]  # ~23:00+
-
-    periods = [
-        (morning_peak, "오전 피크 (07:00-09:00)"),
-        (evening_peak, "오후 피크 (18:00-20:00)"),
-        (off_peak, "비-피크 (11:00-15:00)"),
-        (late_night, "심야 (23:00+)"),
-    ]
-
-    for idx, (period_data, period_name) in enumerate(periods):
-        row = idx // 2
-        col = idx % 2
-        ax = axes[row, col]
-
-        if len(period_data) > 0:
-            valid_data = period_data[["total_area", "congestion_level"]].dropna()
-
-            ax.scatter(
-                valid_data["total_area"],
-                valid_data["congestion_level"],
-                alpha=0.3,
-                s=20,
-            )
-
-            if len(valid_data) > 2:
-                z = np.polyfit(
-                    valid_data["total_area"], valid_data["congestion_level"], 1
-                )
-                p = np.poly1d(z)
-                x_line = np.linspace(
-                    valid_data["total_area"].min(), valid_data["total_area"].max(), 100
-                )
-                ax.plot(x_line, p(x_line), "r--", alpha=0.8, linewidth=2)
-
-                pearson_r, pearson_p = stats.pearsonr(
-                    valid_data["total_area"], valid_data["congestion_level"]
-                )
-                sig = (
-                    "***"
-                    if pearson_p < 0.001
-                    else "**"
-                    if pearson_p < 0.01
-                    else "*"
-                    if pearson_p < 0.05
-                    else "ns"
-                )
-                ax.text(
-                    0.05,
-                    0.95,
-                    f"r = {pearson_r:.3f} ({sig})\nn = {len(valid_data)}",
-                    transform=ax.transAxes,
-                    fontsize=11,
-                    verticalalignment="top",
-                    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
-                )
-
-        ax.set_xlabel("총 건물 연면적 (m²)", fontsize=10)
-        ax.set_ylabel("혼잡도", fontsize=10)
-        ax.set_title(period_name, fontsize=12)
-        ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plt.savefig(
-        OUTPUT_DIR / "correlation_peak_offpeak.png", dpi=300, bbox_inches="tight"
-    )
-    logger.info(
-        f"✓ Peak/off-peak visualization saved to {OUTPUT_DIR / 'correlation_peak_offpeak.png'}"
-    )
-
-    # Plot 3: Heatmap of correlations by time slot and feature
+    # Plot 3: Heatmap of correlations
     pivot_data = df_time_slot_results.pivot(
         index="time_label", columns="feature", values="pearson_r"
     )
 
-    fig, ax = plt.subplots(figsize=(12, 14))
-    im = ax.imshow(pivot_data.values, aspect="auto", cmap="RdBu_r", vmin=-0.5, vmax=0.5)
-
-    ax.set_xticks(range(len(pivot_data.columns)))
-    ax.set_xticklabels(pivot_data.columns, rotation=45, ha="right")
-    ax.set_yticks(range(len(pivot_data.index)))
-    ax.set_yticklabels(pivot_data.index)
-
-    plt.colorbar(im, ax=ax, label="피어슨 상관계수 (r)")
-    ax.set_title(
-        "상관계수 히트맵: 건물 특성 vs 시간대별 혼잡도",
-        fontsize=14,
-        fontweight="bold",
+    fig3 = px.imshow(
+        pivot_data,
+        text_auto=".2f",
+        aspect="auto",
+        color_continuous_scale="RdBu_r",
+        range_color=[-0.5, 0.5],
+        title="상관계수 히트맵: 건물 특성 vs 시간대별 혼잡도",
     )
-    ax.set_xlabel("건물 특성")
-    ax.set_ylabel("시간대")
-
-    plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / "correlation_heatmap.png", dpi=300, bbox_inches="tight")
-    logger.info(f"✓ Heatmap saved to {OUTPUT_DIR / 'correlation_heatmap.png'}")
+    save_plot(fig3, OUTPUT_DIR / "correlation_heatmap.html")
 
     # ============================================================
     # 5. SUMMARY STATISTICS
@@ -461,7 +259,6 @@ else:
     logger.info("=" * 60)
 
     # Find peak correlation times
-    # Using localized name
     area_results = df_time_slot_results[
         df_time_slot_results["feature"] == "총 건물 연면적"
     ]

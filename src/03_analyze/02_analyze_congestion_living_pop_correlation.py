@@ -1,11 +1,10 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
-import matplotlib.pyplot as plt
 import logging
 import sqlite3
 from src.utils.db_util import get_connection
-from src.utils.config import PLOTS_DIR, LOG_FORMAT, LOG_LEVEL
+from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
 
 # Configure Logging
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
@@ -180,190 +179,142 @@ if merged_df["avg_other_foreigner"].notna().sum() > 1:
         "spearman_p": spearman_p,
     }
 
-# ============================================================
-# 4. Visualization
-# ============================================================
-
-fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-fig.suptitle(
-    "Subway Congestion vs Living Population by Time Slot",
-    fontsize=16,
-    fontweight="bold",
-)
-
-# Plot 1: Congestion and Local Population over time
-ax = axes[0, 0]
-ax2 = ax.twinx()
-line1 = ax.plot(
-    merged_df["hour"],
-    merged_df["avg_congestion"],
-    "b-o",
-    linewidth=2,
-    label="Avg Congestion Level",
-)
-line2 = ax2.plot(
-    merged_df["hour"],
-    merged_df["avg_local_living_pop"],
-    "r-s",
-    linewidth=2,
-    label="Avg Local Population",
-)
-ax.set_xlabel("Hour of Day")
-ax.set_ylabel("Congestion Level", color="b")
-ax2.set_ylabel("Living Population", color="r")
-ax.tick_params(axis="y", labelcolor="b")
-ax2.tick_params(axis="y", labelcolor="r")
-ax.set_xticks(range(0, 24, 2))
-ax.grid(True, alpha=0.3)
-ax.set_title("Time Series: Congestion vs Local Population")
-lines = line1 + line2
-labels = [l.get_label() for l in lines]
-ax.legend(lines, labels, loc="upper left")
-
-# Plot 2: Scatter plot - Congestion vs Local Population
-ax = axes[0, 1]
-ax.scatter(
-    merged_df["avg_local_living_pop"],
-    merged_df["avg_congestion"],
-    s=100,
-    alpha=0.6,
-    color="green",
-)
-z = np.polyfit(merged_df["avg_local_living_pop"], merged_df["avg_congestion"], 1)
-p = np.poly1d(z)
-ax.plot(
-    merged_df["avg_local_living_pop"],
-    p(merged_df["avg_local_living_pop"]),
-    "g--",
-    linewidth=2,
-)
-ax.set_xlabel("Average Local Living Population")
-ax.set_ylabel("Average Congestion Level")
-ax.set_title(
-    f"Congestion vs Local Population\n(r={correlations['local_pop']['pearson_r']:.3f}, p={correlations['local_pop']['pearson_p']:.3f})"
-)
-ax.grid(True, alpha=0.3)
-
-# Plot 3: Hourly distribution comparison
-ax = axes[1, 0]
-x = np.arange(len(merged_df))
-width = 0.35
-ax_norm = (merged_df["avg_congestion"] - merged_df["avg_congestion"].min()) / (
-    merged_df["avg_congestion"].max() - merged_df["avg_congestion"].min()
-)
-pop_norm = (
-    merged_df["avg_local_living_pop"] - merged_df["avg_local_living_pop"].min()
-) / (merged_df["avg_local_living_pop"].max() - merged_df["avg_local_living_pop"].min())
-ax.bar(x - width / 2, ax_norm, width, label="Congestion (normalized)", alpha=0.8)
-ax.bar(
-    x + width / 2, pop_norm, width, label="Living Population (normalized)", alpha=0.8
-)
-ax.set_xlabel("Hour of Day")
-ax.set_ylabel("Normalized Value")
-ax.set_title("Normalized Congestion vs Population by Hour")
-ax.set_xticks(x)
-ax.set_xticklabels([f"{int(h):02d}" for h in merged_df["hour"]])
-ax.legend()
-ax.grid(True, alpha=0.3, axis="y")
-
-# Plot 4: Summary statistics
-ax = axes[1, 1]
-ax.axis("off")
-summary_text = f"""
-CORRELATION SUMMARY
-
-Congestion vs Local Population:
-  Pearson r:  {correlations["local_pop"]["pearson_r"]:.4f}
-  p-value:    {correlations["local_pop"]["pearson_p"]:.4f}
-  Spearman ρ: {correlations["local_pop"]["spearman_r"]:.4f}
-  p-value:    {correlations["local_pop"]["spearman_p"]:.4f}
-
-Key Findings:
-  • Total Hours: {len(merged_df)}
-  • Peak Congestion Hour: {merged_df.loc[merged_df["avg_congestion"].idxmax(), "hour"]:.0f}:00
-  • Peak Population Hour: {merged_df.loc[merged_df["avg_local_living_pop"].idxmax(), "hour"]:.0f}:00
-  • Avg Congestion: {merged_df["avg_congestion"].mean():.2f}
-  • Avg Population: {merged_df["avg_local_living_pop"].mean():.2f}
-
-Interpretation:
-  {"Strong" if abs(correlations["local_pop"]["pearson_r"]) > 0.7 else "Moderate" if abs(correlations["local_pop"]["pearson_r"]) > 0.4 else "Weak"} correlation detected.
-  {"Statistically significant" if correlations["local_pop"]["pearson_p"] < 0.05 else "Not statistically significant"} (p < 0.05)
-"""
-ax.text(
-    0.1,
-    0.9,
-    summary_text,
-    transform=ax.transAxes,
-    fontsize=10,
-    verticalalignment="top",
-    fontfamily="monospace",
-    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
-)
-
-plt.tight_layout()
-output_dir = OUTPUT_DIR
-if (
-    not output_dir.exists()
-):  # OUTPUT_DIR is config, which is 'output'. But we probably want output/plots?
-    # config says OUTPUT_DIR = project/output.
-    # PLOTS_DIR = project/output/plots.
-    # The original script saved to output/eda_congestion_population_correlation.png directly in output.
-    # Let's align with config. Ideally PLOTS_DIR?
-    # But let's keep consistency with original path if possible or improve.
-    # Original: "output/eda_congestion_population_correlation.png"
-    # Let's use OUTPUT_DIR / "eda_congestion_population_correlation.png"
-    pass
-
-output_path = OUTPUT_DIR / "eda_congestion_population_correlation.png"
-plt.savefig(output_path, dpi=300, bbox_inches="tight")
-logger.info(f"\n✓ Visualization saved to: {output_path}")
 
 # ============================================================
-# 5. Additional Analysis: Weekday vs Weekend
+# 4. Visualization (Refactored to Plotly)
 # ============================================================
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import plotly.express as px
+from src.utils.visualization import save_plot
 
-logger.info("\n" + "=" * 70)
-logger.info("ADDITIONAL ANALYSIS: WEEKDAY VS WEEKEND")
-logger.info("=" * 70)
 
-congestion_weekend = (
-    congestion_df[congestion_df["is_weekend"] == 1]
-    .groupby("hour")["avg_congestion"]
-    .mean()
-)
-congestion_weekday = (
-    congestion_df[congestion_df["is_weekend"] == 0]
-    .groupby("hour")["avg_congestion"]
-    .mean()
-)
+def visualize_results(merged_df, correlations):
+    logger.info("Generating visualizations with Plotly...")
 
-fig, ax = plt.subplots(figsize=(12, 6))
-ax.plot(
-    congestion_weekday.index,
-    congestion_weekday.values,
-    "b-o",
-    label="Weekday",
-    linewidth=2,
-)
-ax.plot(
-    congestion_weekend.index,
-    congestion_weekend.values,
-    "r-s",
-    label="Weekend",
-    linewidth=2,
-)
-ax.set_xlabel("Hour of Day")
-ax.set_ylabel("Average Congestion Level")
-ax.set_title("Subway Congestion: Weekday vs Weekend Pattern")
-ax.set_xticks(range(0, 24, 2))
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-output_path_ww = OUTPUT_DIR / "eda_congestion_weekday_weekend.png"
-plt.savefig(output_path_ww, dpi=300, bbox_inches="tight")
-logger.info(f"✓ Weekday/Weekend analysis saved to: {output_path_ww}")
+    # 1. Congestion and Local Population over time (Dual Axis)
+    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
 
-conn.close()
-logger.info("\n" + "=" * 70)
-logger.info("ANALYSIS COMPLETE")
-logger.info("=" * 70)
+    fig1.add_trace(
+        go.Scatter(
+            x=merged_df["hour"],
+            y=merged_df["avg_congestion"],
+            name="혼잡도",
+            mode="lines+markers",
+        ),
+        secondary_y=False,
+    )
+
+    fig1.add_trace(
+        go.Scatter(
+            x=merged_df["hour"],
+            y=merged_df["avg_local_living_pop"],
+            name="생활인구 (내국인)",
+            mode="lines+markers",
+            line=dict(color="red"),
+        ),
+        secondary_y=True,
+    )
+
+    fig1.update_layout(
+        title_text="시간대별 혼잡도 및 생활인구 추이", hovermode="x unified"
+    )
+    fig1.update_xaxes(title_text="시간 (Hour)")
+    fig1.update_yaxes(title_text="혼잡도", secondary_y=False)
+    fig1.update_yaxes(title_text="생활인구", secondary_y=True)
+
+    save_plot(fig1, OUTPUT_DIR / "eda_congestion_population_trend.html")
+
+    # 2. Scatter Plot
+    fig2 = px.scatter(
+        merged_df,
+        x="avg_local_living_pop",
+        y="avg_congestion",
+        # trendline="ols",  # Removed due to missing statsmodels
+        hover_data=["hour"],
+        title=f"생활인구 vs 혼잡도 산점도 (r={correlations['local_pop']['pearson_r']:.3f})",
+    )
+    save_plot(fig2, OUTPUT_DIR / "eda_congestion_population_scatter.html")
+
+    # 3. Normalized Comparison Bar Chart using Melt for tidy format
+    merged_norm = merged_df.copy()
+    # Normalize for visualization
+    merged_norm["norm_congestion"] = (
+        merged_df["avg_congestion"] - merged_df["avg_congestion"].min()
+    ) / (merged_df["avg_congestion"].max() - merged_df["avg_congestion"].min())
+    merged_norm["norm_population"] = (
+        merged_df["avg_local_living_pop"] - merged_df["avg_local_living_pop"].min()
+    ) / (
+        merged_df["avg_local_living_pop"].max()
+        - merged_df["avg_local_living_pop"].min()
+    )
+
+    df_melt = merged_norm.melt(
+        id_vars=["hour"],
+        value_vars=["norm_congestion", "norm_population"],
+        var_name="Type",
+        value_name="Normalized Value",
+    )
+
+    fig3 = px.bar(
+        df_melt,
+        x="hour",
+        y="Normalized Value",
+        color="Type",
+        barmode="group",
+        title="정규화된 혼잡도 및 생활인구 시간대별 비교",
+    )
+    save_plot(fig3, OUTPUT_DIR / "eda_congestion_population_bar.html")
+
+
+def analyze_weekend_pattern(congestion_df):
+    logger.info("\n" + "=" * 70)
+    logger.info("ADDITIONAL ANALYSIS: WEEKDAY VS WEEKEND")
+    logger.info("=" * 70)
+
+    congestion_weekend = (
+        congestion_df[congestion_df["is_weekend"] == 1]
+        .groupby("hour")["avg_congestion"]
+        .mean()
+        .reset_index()
+    )
+    congestion_weekday = (
+        congestion_df[congestion_df["is_weekend"] == 0]
+        .groupby("hour")["avg_congestion"]
+        .mean()
+        .reset_index()
+    )
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=congestion_weekday["hour"],
+            y=congestion_weekday["avg_congestion"],
+            name="평일",
+            mode="lines+markers",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=congestion_weekend["hour"],
+            y=congestion_weekend["avg_congestion"],
+            name="주말",
+            mode="lines+markers",
+        )
+    )
+
+    fig.update_layout(
+        title="평일 vs 주말 혼잡도 패턴 비교",
+        xaxis_title="시간",
+        yaxis_title="평균 혼잡도",
+    )
+    save_plot(fig, OUTPUT_DIR / "eda_congestion_weekday_weekend.html")
+
+
+# Main Execution Flow
+if __name__ == "__main__":
+    visualize_results(merged_df, correlations)
+    analyze_weekend_pattern(congestion_df)
+
+    conn.close()
+    logger.info("Analysis and Visualization Complete.")
