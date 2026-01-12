@@ -1,0 +1,48 @@
+[project]
+name = "week2-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "chardet>=5.2.0",
+    "folium>=0.20.0",
+    "geopandas>=1.1.2",
+    "huggingface-hub>=1.3.1",
+    "kiwipiepy>=0.22.2",
+    "mapclassify>=2.10.0",
+    "matplotlib>=3.10.8",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.3",
+    "plotly>=6.5.1",
+    "publicdatareader>=1.1.0",
+    "pydash>=8.0.5",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "rich>=14.2.0",
+    "seaborn>=0.13.2",
+    "shapely>=2.1.2",
+    "sqlalchemy>=2.0.45",
+    "wordcloud>=1.9.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
+[tool.uv.sources]
+week2-project = { workspace = true, editable = true }
+
+[dependency-groups]
+dev = [
+    "week2-project",
+]
