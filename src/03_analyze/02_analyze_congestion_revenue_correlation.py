@@ -76,7 +76,9 @@ def analyze_revenue_congestion():
                     AVG(c.congestion_level) as avg_congestion
                 FROM Station_Congestion c
                 JOIN Station_Routes r ON c.station_number = r.station_number
+                JOIN Lines l ON r.line_id = l.line_id
                 WHERE c.time_slot BETWEEN {start} AND {end}
+                  AND l.line_name IN ('2호선', '4호선', '5호선')
                 GROUP BY r.administrative_dong, c.quarter_code
             """
             df_congestion = pd.read_sql_query(query_congestion, conn)

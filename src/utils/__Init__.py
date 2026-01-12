@@ -7,4 +7,8 @@ from .seoul_open_api import (
     create_api_url,
 )
 from .file_encoding_util import process_files
-from .hf_upload import upload_to_hf
+
+try:
+    from .hf_upload import upload_to_hf
+except ImportError:
+    pass
