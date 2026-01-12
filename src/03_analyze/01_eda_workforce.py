@@ -1,13 +1,9 @@
 import pandas as pd
-import sqlite3
 import matplotlib.pyplot as plt
 import seaborn as sns
-import plotly.express as px
-import os
 import sys
 import platform
 import logging
-import numpy as np
 from src.utils.db_util import get_connection
 from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
 
@@ -59,7 +55,7 @@ sns.set(font=font_family, rc={"axes.unicode_minus": False})
 summary_file = EDA_OUTPUT_DIR / "eda_summary.md"
 
 with open(summary_file, "w", encoding="utf-8") as f:
-    f.write("# 생활인구 데이터 분석 보고서 (Workplace Population)\n\n")
+    f.write("# 직장인구 데이터 분석 보고서 (Workplace Population)\n\n")
 
     # 2. Missing Values & Outliers
     f.write("## 1. 결측치 확인\n")
@@ -81,10 +77,10 @@ with open(summary_file, "w", encoding="utf-8") as f:
         upper_bound = Q3 + 1.5 * IQR
         outliers = df[(df["total_pop"] < lower_bound) | (df["total_pop"] > upper_bound)]
         f.write(
-            f"## 이상치 (총 생활인구)\n1.5*IQR 규칙에 따라 {len(outliers)} 개의 이상치가 발견되었습니다.\n"
+            f"## 이상치 (총 직장인구)\n1.5*IQR 규칙에 따라 {len(outliers)} 개의 이상치가 발견되었습니다.\n"
         )
         if not outliers.empty:
-            f.write(f"상위 5개 이상치 지역 (총 생활인구 기준):\n")
+            f.write("상위 5개 이상치 지역 (총 직장인구 기준):\n")
             f.write(
                 outliers.sort_values("total_pop", ascending=False)[
                     ["admin_dong_name", "total_pop"]
@@ -96,7 +92,7 @@ with open(summary_file, "w", encoding="utf-8") as f:
 
     # Top 5 Populous Dongs
     if "total_pop" in df.columns:
-        f.write("## 2. 생활인구 상위 5개 지역\n")
+        f.write("## 2. 직장인구 상위 5개 지역\n")
         top5 = df.sort_values("total_pop", ascending=False)[
             ["admin_dong_name", "total_pop"]
         ].head(5)
@@ -105,7 +101,7 @@ with open(summary_file, "w", encoding="utf-8") as f:
 
     # Top 5 Lowest Populous Dongs
     if "total_pop" in df.columns:
-        f.write("## 3. 생활인구 하위 5개 지역\n")
+        f.write("## 3. 직장인구 하위 5개 지역\n")
         bottom5 = df.sort_values("total_pop", ascending=True)[
             ["admin_dong_name", "total_pop"]
         ].head(5)
@@ -125,8 +121,8 @@ if "total_pop" in df.columns:
     plt.figure(figsize=(12, 6))
     top10 = df.sort_values("total_pop", ascending=False).head(10)
     sns.barplot(data=top10, x="total_pop", y="admin_dong_name", palette="viridis")
-    plt.title("생활인구 상위 10개 행정동")
-    plt.xlabel("총 생활인구 수")
+    plt.title("직장인구 상위 10개 행정동")
+    plt.xlabel("총 직장인구 수")
     plt.ylabel("행정동")
     plt.tight_layout()
     plt.savefig(EDA_OUTPUT_DIR / "top10_dongs.png")
@@ -136,7 +132,7 @@ if "total_pop" in df.columns:
 if "total_pop" in df.columns:
     plt.figure(figsize=(10, 6))
     sns.histplot(df["total_pop"], kde=True, bins=30)
-    plt.title("행정동별 총 생활인구 분포")
+    plt.title("행정동별 총 직장인구 분포")
     plt.xlabel("인구 수")
     plt.ylabel("빈도 (행정동 수)")
     plt.savefig(EDA_OUTPUT_DIR / "dist_total_pop.png")
