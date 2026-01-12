@@ -5,12 +5,9 @@ Analysis by time slot (not averaged)
 """
 
 import pandas as pd
-import numpy as np
 from scipy import stats
 import logging
-import sqlite3
 import plotly.express as px
-import plotly.graph_objects as go
 from src.utils.db_util import get_connection
 from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
 from src.utils.visualization import save_plot, apply_theme
