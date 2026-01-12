@@ -48,15 +48,17 @@ def analyze_correlation():
             row = (i // 3) + 1
             col = (i % 3) + 1
 
-            # 1. Fetch Congestion Data for specific time slots
+            # 1. Fetch Congestion Data for specific time slots (2, 4, 5호선 only)
             query_congestion = f"""
-                SELECT 
+                SELECT
                     r.administrative_dong,
                     c.quarter_code,
                     AVG(c.congestion_level) as avg_congestion
                 FROM Station_Congestion c
                 JOIN Station_Routes r ON c.station_number = r.station_number
+                JOIN Lines l ON r.line_id = l.line_id
                 WHERE c.time_slot BETWEEN {start_slot} AND {end_slot}
+                AND l.line_name IN ('2호선', '4호선', '5호선')
                 GROUP BY r.administrative_dong, c.quarter_code
             """
             df_congestion = pd.read_sql_query(query_congestion, conn)
