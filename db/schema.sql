@@ -211,3 +211,17 @@ CREATE TABLE IF NOT EXISTS Dong_Living_Population (
     
     UNIQUE(base_date, time_slot, admin_dong_code)
 );
+
+-- 9. 역세권 건물 통계
+CREATE TABLE IF NOT EXISTS Station_Catchment_Building_Stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER NOT NULL,
+    line_id INTEGER NOT NULL,
+    usage_type TEXT NOT NULL, -- 건축물 주용도
+    total_area REAL DEFAULT 0, -- 연면적 합계
+    total_households INTEGER DEFAULT 0, -- 총 세대 수
+    total_families INTEGER DEFAULT 0, -- 총 가구 수
+    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE,
+    FOREIGN KEY (line_id) REFERENCES Lines(line_id) ON DELETE CASCADE,
+    UNIQUE(station_id, line_id, usage_type)
+);

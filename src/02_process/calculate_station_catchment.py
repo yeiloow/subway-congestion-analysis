@@ -23,6 +23,7 @@ def main():
     query = """
     SELECT 
         sr.station_id,
+        sr.line_id,
         s.station_name_kr as station_name,
         l.line_name,
         sr.lat,
@@ -78,7 +79,7 @@ def main():
     print("6. Aggregating Statistics...")
     # Group by Station and Usage
     stats = (
-        joined_gdf.groupby(["station_id", "station_name", "line_name", "A9"])
+        joined_gdf.groupby(["station_id", "station_name", "line_id", "line_name", "A9"])
         .agg(
             {
                 "A18": "sum",  # Total Area
@@ -100,10 +101,37 @@ def main():
     )
 
     # Save Results
-    print(f"7. Saving results to {OUTPUT_PATH}...")
+    print(f"7. Saving results to {OUTPUT_PATH} and DB...")
     stats.to_csv(
         OUTPUT_PATH, index=False, encoding="utf-8-sig"
     )  # utf-8-sig for Korean Excel compatibility
+
+    # Save to DB
+    print("   Saving to SQLite DB...")
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Ensure clean state for a full reload (Optional: remove if incremental is desired)
+    cur.execute("DELETE FROM Station_Catchment_Building_Stats")
+    conn.commit()
+
+    # Insert specific columns map to schema
+    # Schema: station_id, line_id, usage_type, total_area, total_households, total_families
+    db_df = stats[
+        [
+            "station_id",
+            "line_id",
+            "usage_type",
+            "total_area",
+            "total_households",
+            "total_families",
+        ]
+    ]
+
+    db_df.to_sql(
+        "Station_Catchment_Building_Stats", conn, if_exists="append", index=False
+    )
+    conn.close()
     print("Done!")
 
 
