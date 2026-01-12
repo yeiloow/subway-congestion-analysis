@@ -31,6 +31,17 @@ def load_data():
     try:
         df = pd.read_sql(query, conn)
         conn.close()
+
+        # Group by admin_dong_name to handle duplicates across quarters
+        # The user mentioned data is identical across quarters, so mean() will preserve the value
+        # We need to keep non-numeric columns that might be lost in groupby if not careful,
+        # but here admin_dong_name is the key.
+        if not df.empty and "admin_dong_name" in df.columns:
+            # Select numeric columns for aggregation
+            numeric_cols = df.select_dtypes(include=["number"]).columns
+            # Ensure we don't lose the index or other info if needed, but for this app focusing on dong stats:
+            df = df.groupby("admin_dong_name")[numeric_cols].mean().reset_index()
+
         return df
     except Exception as e:
         conn.close()

@@ -28,6 +28,12 @@ except Exception as e:
 query = "SELECT * FROM Dong_Workplace_Population"
 try:
     df = pd.read_sql(query, conn)
+
+    # Group by admin_dong_name to handle duplicates across quarters
+    if not df.empty and "admin_dong_name" in df.columns:
+        numeric_cols = df.select_dtypes(include=["number"]).columns
+        df = df.groupby("admin_dong_name")[numeric_cols].mean().reset_index()
+
 except Exception as e:
     logger.error(f"Error reading from database: {e}")
     conn.close()
