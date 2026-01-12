@@ -105,7 +105,7 @@ with tab1:
     # Add Reference Line (0)
     fig_line.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
 
-    st.plotly_chart(fig_line, use_container_width=True)
+    st.plotly_chart(fig_line, width="stretch")
 
     st.info("""
     **💡 주요 발견**:
@@ -133,7 +133,7 @@ with tab2:
         title="시간대 vs 건물 특성 상관계수 히트맵",
         labels={"color": "상관계수 (r)"},
     )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    st.plotly_chart(fig_heatmap, width="stretch")
 
 # Tab 3: Detailed Scatter Plot
 with tab3:
@@ -177,7 +177,7 @@ with tab3:
         labels={"total_area": "총 건물 연면적 (m²)", "congestion_level": "혼잡도"},
         trendline="ols",  # Add trendline
     )
-    st.plotly_chart(fig_scatter, use_container_width=True)
+    st.plotly_chart(fig_scatter, width="stretch")
 
     st.subheader("📊 호선별 분석")
     st.markdown("선택된 시간대의 호선별 평균 혼잡도와 평균 건물 연면적입니다.")
