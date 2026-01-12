@@ -13,3 +13,4 @@ trigger: always_on
 ## 기술 스택
 - Database: sqlalchemy + sqlite
 - Visualalization: plotly
+  - express 대신 graph_objects를 사용해주세요
