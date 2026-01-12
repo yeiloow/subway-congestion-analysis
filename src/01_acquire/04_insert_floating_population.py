@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 import logging
 from src.utils.db_util import get_connection
-from src.utils.config import OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
+from src.utils.config import DATA_DIR, LOG_FORMAT, LOG_LEVEL
 
 # Configure Logging
 # logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 def run_insert_floating_population():
     # File paths
-    input_file = OUTPUT_DIR / "서울시_상권분석서비스_길단위인구_행정동_2019_2025.csv"
+    input_file = (
+        DATA_DIR
+        / "01_raw/07_openapi/서울시_상권분석서비스_길단위인구_행정동_2019_2025.csv"
+    )
 
     # Check if input file exists
     if not input_file.exists():
