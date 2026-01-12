@@ -42,12 +42,11 @@ if df.empty:
 
 # Set Korean Font
 system_name = platform.system()
+font_family = "Malgun Gothic"  # Default for Windows
 if system_name == "Darwin":  # Mac
     font_family = "AppleGothic"
 elif system_name == "Windows":
     font_family = "Malgun Gothic"
-else:
-    font_family = "Malgun Gothic"  # Default fallback
 
 plt.rcParams["font.family"] = font_family
 plt.rcParams["axes.unicode_minus"] = False
@@ -73,27 +72,65 @@ with open(summary_file, "w", encoding="utf-8") as f:
         f.write("\n")
     f.write("\n")
 
+    # Outlier Analysis (Total Sales)
+    f.write("## 2. 이상치 분석 (월 매출 금액 기준)\n")
+    if "month_sales_amt" in df.columns:
+        Q1 = df["month_sales_amt"].quantile(0.25)
+        Q3 = df["month_sales_amt"].quantile(0.75)
+        IQR = Q3 - Q1
+        outliers = df[
+            (df["month_sales_amt"] < (Q1 - 1.5 * IQR))
+            | (df["month_sales_amt"] > (Q3 + 1.5 * IQR))
+        ]
+        f.write(f"1.5*IQR 규칙에 따라 {len(outliers)} 개의 이상치가 발견되었습니다.\n")
+
+        if not outliers.empty:
+            f.write("매출 상위 5개 이상치 데이터:\n")
+            top_outliers = outliers.sort_values(
+                "month_sales_amt", ascending=False
+            ).head(5)
+            # Display readable columns if possible
+            disp_cols = [
+                c
+                for c in ["admin_dong_name", "service_type_name", "month_sales_amt"]
+                if c in df.columns
+            ]
+            f.write(top_outliers[disp_cols].to_string(index=False))
+        f.write("\n\n")
+
+    # Top/Bottom 5 Dongs by Revenue Sum
+    f.write("## 3. 매출 상위/하위 5개 행정동 (총합)\n")
+    if "admin_dong_name" in df.columns and "month_sales_amt" in df.columns:
+        dong_sales = (
+            df.groupby("admin_dong_name")["month_sales_amt"]
+            .sum()
+            .sort_values(ascending=False)
+        )
+
+        f.write("### 상위 5개 행정동\n")
+        f.write(dong_sales.head(5).to_string())
+        f.write("\n\n")
+
+        f.write("### 하위 5개 행정동\n")
+        f.write(dong_sales.tail(5).to_string())
+        f.write("\n\n")
+
     # 3. Descriptive Statistics
-    f.write("## 2. 기술 통계량 (매출 금액 및 건수)\n")
+    f.write("## 4. 기술 통계량 (매출 금액 및 건수)\n")
     desc_cols = [
         "month_sales_amt",
         "month_sales_cnt",
         "weekday_sales_amt",
         "weekend_sales_amt",
     ]
-    # Filter only existing columns
     desc_cols = [c for c in desc_cols if c in df.columns]
-
     if desc_cols:
         f.write(df[desc_cols].describe().to_string())
     f.write("\n\n")
 
     # 4. Correlation Analysis
-    f.write("## 3. 상관관계 분석\n")
+    f.write("## 5. 상관관계 분석\n")
     numeric_df = df.select_dtypes(include=["number"])
-    if "id" in numeric_df.columns:
-        numeric_df = numeric_df.drop(columns=["id"])
-
     corr = numeric_df.corr()
     if "month_sales_amt" in corr.columns:
         corr_with_sales = corr["month_sales_amt"].sort_values(ascending=False).head(10)
@@ -114,7 +151,27 @@ if "month_sales_amt" in df.columns:
     plt.savefig(EDA_OUTPUT_DIR / "dist_month_sales_amt.png")
     plt.close()
 
-# 2. Boxplot of Sales by Service Type (Top 10 types by total sales if too many)
+# 2. Top 10 Dongs Bar Chart
+if "admin_dong_name" in df.columns and "month_sales_amt" in df.columns:
+    top10_dongs = (
+        df.groupby("admin_dong_name")["month_sales_amt"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(10)
+        .reset_index()
+    )
+    plt.figure(figsize=(12, 6))
+    sns.barplot(
+        data=top10_dongs, x="month_sales_amt", y="admin_dong_name", palette="viridis"
+    )
+    plt.title("매출 상위 10개 행정동 (총합)")
+    plt.xlabel("총 매출 금액")
+    plt.ylabel("행정동")
+    plt.tight_layout()
+    plt.savefig(EDA_OUTPUT_DIR / "top10_revenue_dongs.png")
+    plt.close()
+
+# 3. Boxplot of Sales by Service Type (Top 10 types)
 if "service_type_name" in df.columns and "month_sales_amt" in df.columns:
     top_services = (
         df.groupby("service_type_name")["month_sales_amt"]
@@ -137,8 +194,8 @@ if "service_type_name" in df.columns and "month_sales_amt" in df.columns:
     plt.savefig(EDA_OUTPUT_DIR / "boxplot_sales_by_service.png")
     plt.close()
 
-# 3. Correlation Heatmap
-# Select key columns for cleaner heatmap
+# 4. Correlation Heatmap
+# Select key columns
 key_cols = [
     "month_sales_amt",
     "month_sales_cnt",
@@ -148,8 +205,6 @@ key_cols = [
     "female_sales_amt",
     "age_20_sales_amt",
     "age_30_sales_amt",
-    "age_40_sales_amt",
-    "age_50_sales_amt",
 ]
 existing_key_cols = [c for c in key_cols if c in numeric_df.columns]
 if existing_key_cols:
