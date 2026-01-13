@@ -225,3 +225,15 @@ CREATE TABLE IF NOT EXISTS Station_Catchment_Building_Stats (
     FOREIGN KEY (line_id) REFERENCES Lines(line_id) ON DELETE CASCADE,
     UNIQUE(station_id, line_id, usage_type)
 );
+
+-- 10. 역별 일별 승하차 인원
+CREATE TABLE IF NOT EXISTS Station_Daily_Passengers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usage_date TEXT NOT NULL, -- 사용일자 (YYYYMMDD)
+    line_name TEXT NOT NULL, -- 노선명
+    station_name TEXT NOT NULL, -- 역명
+    boarding_count INTEGER DEFAULT 0, -- 승차총승객수
+    alighting_count INTEGER DEFAULT 0, -- 하차총승객수
+    registration_date TEXT, -- 등록일자
+    UNIQUE(usage_date, line_name, station_name)
+);
