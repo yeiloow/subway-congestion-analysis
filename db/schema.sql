@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS Station_Congestion (
     congestion_id INTEGER PRIMARY KEY AUTOINCREMENT,
     quarter_code TEXT NOT NULL, -- 연분기코드 ex) 20241
     station_number TEXT NOT NULL,
-    day_of_week INTEGER NOT NULL, -- 요일 구분 0: 평일, 1: 토요일, 2: 일요일
+    is_weekend INTEGER NOT NULL, -- 요일 구분 0: 평일, 1: 토요일, 2: 일요일
     is_upline INTEGER NOT NULL, -- 상행 구분 0: 하행, 1: 상행
     time_slot INTEGER NOT NULL, -- 05:30 = 1, 06:00 = 2, ...
     congestion_level REAL NOT NULL,
