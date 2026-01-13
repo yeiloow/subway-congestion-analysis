@@ -190,6 +190,10 @@ def visualize_results(df_corr, df_analysis):
         print("No sufficient data for correlation analysis.")
         return
 
+    # Create output directory
+    output_dir = os.path.join(project_root, "output")
+    os.makedirs(output_dir, exist_ok=True)
+
     # 1. Distribution of Correlations
     fig_hist = go.Figure()
     fig_hist.add_trace(
@@ -212,18 +216,23 @@ def visualize_results(df_corr, df_analysis):
         template="plotly_white",
     )
     # Save instead of show
-    fig_hist.write_html("correlation_distribution.html")
-    print("Saved correlation_distribution.html")
+    hist_path = os.path.join(output_dir, "correlation_distribution.html")
+    fig_hist.write_html(hist_path)
+    print(f"Saved {hist_path}")
 
     # 2. Top Positive Correlations Table
     top_pos = df_corr.sort_values("corr_boarding", ascending=False).head(10)
     print("\n[상위 양의 상관관계 (혼잡도 vs 승차)]")
+    # Add readable time
+    top_pos["time_str"] = top_pos["time_slot"].apply(
+        lambda x: f"{5 + (x - 1) // 2:02d}:{(x - 1) % 2 * 30:02d}"
+    )
     print(
         top_pos[
             [
                 "line_name",
                 "station_name",
-                "time_slot",
+                "time_str",
                 "is_upline",
                 "corr_boarding",
                 "sample_size",
@@ -237,6 +246,8 @@ def visualize_results(df_corr, df_analysis):
         line = best_case["line_name"]
         station = best_case["station_name"]
         time = best_case["time_slot"]
+        # Calculate readable time
+        time_str = f"{5 + (time - 1) // 2:02d}:{(time - 1) % 2 * 30:02d}"
         upline = best_case["is_upline"]
 
         subset = df_analysis[
@@ -252,7 +263,7 @@ def visualize_results(df_corr, df_analysis):
             go.Scatter(
                 x=subset["quarter_code"],
                 y=subset["congestion_level"],
-                name="혼잡도",
+                name=f"혼잡도 ({time_str})",
                 mode="lines+markers",
             ),
             secondary_y=False,
@@ -262,7 +273,7 @@ def visualize_results(df_corr, df_analysis):
             go.Scatter(
                 x=subset["quarter_code"],
                 y=subset["boarding_count"],
-                name="승차인원",
+                name="일평균 승차인원",
                 mode="lines+markers",
                 line=dict(dash="dot"),
             ),
@@ -272,14 +283,15 @@ def visualize_results(df_corr, df_analysis):
         direction = "상행" if upline == 1 else "하행"
 
         fig_example.update_layout(
-            title=f"시계열 추이 비교: {line} {station} ({direction}, TimeSlot {time})",
+            title=f"시계열 상관분석: {line} {station} ({direction})<br><sub>{time_str} 시간대 혼잡도 vs 분기 일평균 승차인원 (Corr: {best_case['corr_boarding']:.4f})</sub>",
             template="plotly_white",
         )
         fig_example.update_yaxes(title_text="혼잡도 (%)", secondary_y=False)
         fig_example.update_yaxes(title_text="일평균 승차인원 (명)", secondary_y=True)
 
-        fig_example.write_html("correlation_example.html")
-        print("Saved correlation_example.html")
+        example_path = os.path.join(output_dir, "correlation_example.html")
+        fig_example.write_html(example_path)
+        print(f"Saved {example_path}")
 
 
 def main():
