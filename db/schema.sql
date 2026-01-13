@@ -32,10 +32,10 @@ CREATE TABLE IF NOT EXISTS Station_Routes (
 --- 4. 역별 혼잡도
 CREATE TABLE IF NOT EXISTS Station_Congestion (
     congestion_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quarter_code TEXT NOT NULL,
+    quarter_code TEXT NOT NULL, -- 연분기코드 ex) 20241
     station_number TEXT NOT NULL,
-    is_weekend INTEGER NOT NULL,
-    is_upline INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL, -- 요일 구분 0: 평일, 1: 토요일, 2: 일요일
+    is_upline INTEGER NOT NULL, -- 상행 구분 0: 하행, 1: 상행
     time_slot INTEGER NOT NULL, -- 05:30 = 1, 06:00 = 2, ...
     congestion_level REAL NOT NULL,
     FOREIGN KEY (station_number) REFERENCES Station_Routes(station_number) ON DELETE CASCADE,
