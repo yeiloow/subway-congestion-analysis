@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from statsmodels.tsa.stattools import adfuller
 import os
 import sys
@@ -19,16 +20,19 @@ def load_top_congested_data(limit=5):
     """
     conn = sqlite3.connect(DB_PATH)
 
-    # 1. 상위 N개 조합 찾기
+    # 1. 상위 N개 조합 찾기 (2, 4, 5호선 대상)
     top_query = f"""
     SELECT 
-        station_number,
-        time_slot,
-        is_upline,
-        AVG(congestion_level) as avg_cong
-    FROM Station_Congestion
-    WHERE is_weekend = 0 -- 평일 기준
-    GROUP BY station_number, time_slot, is_upline
+        sc.station_number,
+        sc.time_slot,
+        sc.is_upline,
+        AVG(sc.congestion_level) as avg_cong
+    FROM Station_Congestion sc
+    JOIN Station_Routes sr ON sc.station_number = sr.station_number
+    JOIN Lines l ON sr.line_id = l.line_id
+    WHERE sc.is_weekend = 0 -- 평일 기준
+      AND l.line_name IN ('2호선', '4호선', '5호선')
+    GROUP BY sc.station_number, sc.time_slot, sc.is_upline
     ORDER BY avg_cong DESC
     LIMIT {limit}
     """
@@ -58,10 +62,6 @@ def load_top_congested_data(limit=5):
         station_name = info[0] if info else "Unknown"
         line_name = info[1] if info else "Unknown"
 
-        # 시계열 데이터 조회 (모든 요일 포함? 아니면 평일만? -> 보통 혼잡도 분석은 평일 위주이므로 평일(day_of_week=0)만 필터)
-        # 쿼터별 평균으로 갈지, 특정 요일 데이터인지 확인 필요.
-        # Station_Congestion은 요일별로 구분되어 있음.
-        # 따라서 day_of_week=0 (평일) 인 데이터만 가져와서 시계열 구성.
         ts_query = """
         SELECT 
             quarter_code,
@@ -84,82 +84,132 @@ def load_top_congested_data(limit=5):
 
 
 def perform_adf_test(series, name):
-    """ADF 테스트를 수행하고 결과를 출력합니다."""
-    print(f"\n   [{name}]")
+    """ADF 테스트를 수행하고 결과를 반환합니다."""
     if len(series) < 3:
-        print("     -> 데이터 부족으로 테스트 불가")
-        return
+        return {"error": "Not enough data"}
 
     try:
         # maxlag=0 enforced for very short series
-        # autolag=None을 해야 maxlag가 적용됨
         result = adfuller(series, autolag=None, maxlag=0)
-
-        p_value = result[1]
-        is_stationary = p_value < 0.05
-
-        print(f"     - ADF Statistic: {result[0]:.4f}")
-        print(f"     - p-value: {p_value:.4f}")
-        print(
-            f"     - 결과: {'정상 시계열 (Stationary)' if is_stationary else '비정상 시계열 (Non-stationary)'}"
-        )
-
+        return {
+            "statistic": result[0],
+            "p-value": result[1],
+            "is_stationary": result[1] < 0.05,
+        }
     except Exception as e:
-        print(f"     -> 테스트 오류: {str(e)}")
+        return {"error": str(e)}
 
 
-def plot_top_trends(data_list):
-    """상위 혼잡 케이스의 시계열 추세를 시각화합니다."""
-    fig = go.Figure()
+def print_test_result(name, result, prefix=""):
+    """테스트 결과를 출력합니다."""
+    if "error" in result:
+        print(f"   {prefix}[{name}] -> 테스트 불가 ({result['error']})")
+    else:
+        status = (
+            "정상 (Stationary)"
+            if result["is_stationary"]
+            else "비정상 (Non-stationary)"
+        )
+        print(f"   {prefix}[{name}]")
+        print(
+            f"     - ADF Stat: {result['statistic']:.4f}, p-value: {result['p-value']:.4f}"
+        )
+        print(f"     - 결과: {status}")
 
-    for item in data_list:
+
+def visualize_comparison(data_list):
+    """원본 데이터와 차분 데이터를 비교 시각화합니다."""
+    # 상위 1개 케이스만 대표로 시각화하거나, subplot으로 그림
+    # 여기서는 가독성을 위해 상위 3개만 Subplot 3x2 로 시각화
+
+    target_count = min(len(data_list), 3)
+    fig = make_subplots(
+        rows=target_count,
+        cols=2,
+        subplot_titles=[
+            f"Original" if i % 2 == 0 else f"Differenced"
+            for i in range(2 * target_count)
+        ],
+        horizontal_spacing=0.1,
+        vertical_spacing=0.15,
+    )
+
+    for i in range(target_count):
+        item = data_list[i]
         df = item["data"]
+        diff_series = df["congestion_level"].diff().dropna()
         label = item["label"]
 
+        # Subplot Titles update manual hack (Plotly subplot titles are static list)
+        # Instead, try adding title annotation or just rely on row grouping.
+
+        # Original
         fig.add_trace(
             go.Scatter(
                 x=df["quarter_code"],
                 y=df["congestion_level"],
                 mode="lines+markers",
-                name=label,
-                marker=dict(size=8),
-                line=dict(width=2),
-            )
+                name=f"{label} (Org)",
+                marker=dict(size=8, color="blue"),
+                showlegend=True,
+            ),
+            row=i + 1,
+            col=1,
+        )
+
+        # Differenced
+        # x축은 차분으로 인해 1개 줄어듦 - quarter 코드도 1부터 슬라이싱
+        fig.add_trace(
+            go.Scatter(
+                x=df["quarter_code"][1:],
+                y=diff_series,
+                mode="lines+markers",
+                name=f"{label} (Diff)",
+                marker=dict(size=8, color="red"),
+                showlegend=True,
+            ),
+            row=i + 1,
+            col=2,
         )
 
     fig.update_layout(
-        title="상위 5개 혼잡 구간(평일)의 분기별 혼잡도 추이 (Stationarity Check)",
-        xaxis_title="분기",
-        yaxis_title="혼잡도 (%)",
+        title="<b>원본 시계열 vs 차분(Differenced) 시계열 비교</b> (상위 3개 혼잡 구간, 2/4/5호선)",
+        height=300 * target_count,
         template="plotly_white",
         font=dict(family="Malgun Gothic", size=12),
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.05),
     )
 
     return fig
 
 
 def main():
-    print("1. 상위 5개 혼잡 데이터 로드 중...")
+    print("1. 데이터 로드 로드 (Top 5)...")
     try:
         data_list = load_top_congested_data(limit=5)
     except Exception as e:
-        print(f"   [Error] 데이터 로드 실패: {e}")
+        print(f"   [Error] {e}")
         return
 
-    print(f"   - {len(data_list)}개 케이스 로드 완료")
-
-    print("\n2. ADF(Augmented Dickey-Fuller) 테스트 수행 (개별)")
-    print("   * 주의: 데이터 포인트가 적어(최대 5개) 통계적 신뢰도가 낮습니다.")
+    print("\n2. Stationarity 분석 (Original vs Differenced)")
+    print("   * 표본이 매우 적으므로(5개) 해석에 주의 필요 *")
 
     for item in data_list:
-        if not item["data"].empty:
-            perform_adf_test(item["data"]["congestion_level"], item["label"])
-        else:
-            print(f"\n   [{item['label']}] -> 데이터 없음")
+        series = item["data"]["congestion_level"]
+        label = item["label"]
 
-    print("\n3. 시각화 생성 중...")
-    fig = plot_top_trends(data_list)
+        print(f"\n   == {label} ==")
+
+        # 1. Original
+        res_org = perform_adf_test(series, "Original")
+        print_test_result("Original", res_org, prefix="")
+
+        # 2. Differenced
+        diff_series = series.diff().dropna()
+        res_diff = perform_adf_test(diff_series, "Differenced")
+        print_test_result("Differenced 1st Order", res_diff, prefix="")
+
+    print("\n3. 비교 시각화 생성 중 (상위 3개)...")
+    fig = visualize_comparison(data_list)
     fig.show()
 
 
