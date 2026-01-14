@@ -15,21 +15,28 @@ def run_insert_daily_passengers():
         logger.error(e)
         return
 
-    # Target directory and file pattern
-    # data/01_raw/02_congestion/서울시_역별_승하차_인원_정보_2023_2025.csv
-    raw_data_dir = DATA_DIR / "01_raw/02_congestion"
-    pattern = str(raw_data_dir / "서울시_역별_승하차_인원_정보_*.csv")
-    files = glob.glob(pattern)
+    # Define file path
+    import unicodedata
+    from huggingface_hub import hf_hub_download
 
-    if not files:
-        logger.warning(f"No files found matching pattern: {pattern}")
-        # Fallback to specific filename if glob fails for some reason or if file naming is exact
-        specific_file = raw_data_dir / "서울시_역별_승하차_인원_정보_2023_2025.csv"
-        if specific_file.exists():
-            files = [str(specific_file)]
-        else:
-            logger.error(f"File not found: {specific_file}")
-            return
+    # Folder "01_raw/지하철혼잡도" is NFD
+    _folder = unicodedata.normalize("NFD", "01_raw/지하철혼잡도")
+    # Filename is likely NFC
+    _filename = unicodedata.normalize(
+        "NFC", "서울시_역별_승하차_인원_정보_2023_2025.csv"
+    )
+
+    repo_id = "alrq/subway"
+
+    try:
+        logger.info(f"Downloading {_filename}...")
+        file_path = hf_hub_download(
+            repo_id=repo_id, filename=f"{_folder}/{_filename}", repo_type="dataset"
+        )
+        files = [file_path]
+    except Exception as e:
+        logger.error(f"Error downloading {_filename}: {e}")
+        return
 
     try:
         for file_path in sorted(files):

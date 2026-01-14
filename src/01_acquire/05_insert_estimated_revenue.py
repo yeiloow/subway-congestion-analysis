@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 def run_insert_estimated_revenue():
-    # File paths
-    # File paths
     import unicodedata
     from huggingface_hub import hf_hub_download
     import os

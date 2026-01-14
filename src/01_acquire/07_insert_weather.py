@@ -14,11 +14,24 @@ from src.utils.config import LOG_FORMAT, LOG_LEVEL
 # Configure Logging
 logger = logging.getLogger(__name__)
 
+import unicodedata
+from huggingface_hub import hf_hub_download
+
+# Folder "01_raw/날씨" is NFD
+WEATHER_FOLDER = unicodedata.normalize("NFD", "01_raw/날씨")
+REPO_ID = "alrq/subway"
+
 
 def insert_daily_temperature(engine):
-    file_path = "data/daily_min_max_temp_202301_202512.csv"
-    if not os.path.exists(file_path):
-        logger.error(f"File not found: {file_path}")
+    filename = "daily_min_max_temp_202301_202512.csv"
+    try:
+        file_path = hf_hub_download(
+            repo_id=REPO_ID,
+            filename=f"{WEATHER_FOLDER}/{filename}",
+            repo_type="dataset",
+        )
+    except Exception as e:
+        logger.error(f"Error downloading {filename}: {e}")
         return
 
     logger.info(f"Loading {file_path}...")
@@ -39,9 +52,15 @@ def insert_daily_temperature(engine):
 
 
 def insert_hourly_weather(engine):
-    file_path = "data/day_weather_202301_202512.csv"
-    if not os.path.exists(file_path):
-        logger.error(f"File not found: {file_path}")
+    filename = "day_weather_202301_202512.csv"
+    try:
+        file_path = hf_hub_download(
+            repo_id=REPO_ID,
+            filename=f"{WEATHER_FOLDER}/{filename}",
+            repo_type="dataset",
+        )
+    except Exception as e:
+        logger.error(f"Error downloading {filename}: {e}")
         return
 
     logger.info(f"Loading {file_path}...")

@@ -7,10 +7,22 @@ logger = logging.getLogger(__name__)
 
 
 def run_insert_subway_timetable():
-    file_path = DATA_DIR / "서울교통공사_서울 도시철도 열차운행시각표_20250704.csv"
+    import unicodedata
+    from huggingface_hub import hf_hub_download
 
-    if not file_path.exists():
-        logger.error(f"File not found: {file_path}")
+    # Folder "01_raw/열차운행시각표" is NFD
+    _folder = unicodedata.normalize("NFD", "01_raw/열차운행시각표")
+    _filename = unicodedata.normalize(
+        "NFC", "서울교통공사_서울 도시철도 열차운행시각표_20250704.csv"
+    )
+    repo_id = "alrq/subway"
+
+    try:
+        file_path = hf_hub_download(
+            repo_id=repo_id, filename=f"{_folder}/{_filename}", repo_type="dataset"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading file: {e}")
         return
 
     logger.info(f"Processing {file_path}...")

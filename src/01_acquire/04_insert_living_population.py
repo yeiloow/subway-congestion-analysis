@@ -58,8 +58,17 @@ SHORT_TERM_COL_MAP = {
 
 
 def get_file_path(category, year, month):
+    import unicodedata
+    from huggingface_hub import hf_hub_download
+
     # category: '03_local', '04_long_foreigner', '05_temp_foreigner'
     # filename pattern: LOCAL_PEOPLE_DONG_YYYYMM.csv, LONG_FOREIGNER_DONG_YYYYMM.csv, TEMP_FOREIGNER_DONG_YYYYMM.csv
+
+    repo_folder_map = {
+        "03_local": "내국인",
+        "04_long_foreigner": "장기외국인",
+        "05_temp_foreigner": "단기외국인",
+    }
 
     if category == "03_local":
         filename = f"LOCAL_PEOPLE_DONG_{year}{month}.csv"
@@ -70,10 +79,23 @@ def get_file_path(category, year, month):
     else:
         return None
 
-    path = RAW_DATA_DIR / category / filename
-    if path.exists():
+    folder_name = repo_folder_map.get(category)
+    if not folder_name:
+        return None
+
+    # Normalizations
+    _folder = unicodedata.normalize("NFD", f"01_raw/{folder_name}")
+    _filename = unicodedata.normalize("NFC", filename)
+    repo_id = "alrq/subway"
+
+    try:
+        path = hf_hub_download(
+            repo_id=repo_id, filename=f"{_folder}/{_filename}", repo_type="dataset"
+        )
         return path
-    return None
+    except Exception as e:
+        logger.error(f"Error downloading {_filename}: {e}")
+        return None
 
 
 def read_csv_safe(path, dtype, index_col=False):

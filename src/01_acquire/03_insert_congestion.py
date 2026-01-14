@@ -206,27 +206,35 @@ def run_insert_congestion():
         logger.error(e)
         return
 
-    # Use glob to find files in the directory
-    # Expecting files in data/01_raw/
-    # Pattern: 서울교통공사_지하철혼잡도정보_*.csv
-    # Or just *.csv but being specific is safer
+    # Define files to process
+    import unicodedata
+    from huggingface_hub import hf_hub_download
 
-    # Check if directory exists
-    raw_data_dir = DATA_DIR / "01_raw" / "02_congestion"
-    if not raw_data_dir.exists():
-        logger.error(f"Directory not found: {raw_data_dir}")
-        return
+    # Folder "01_raw/지하철혼잡도" is NFD
+    _folder = unicodedata.normalize("NFD", "01_raw/지하철혼잡도")
 
-    pattern = str(raw_data_dir / "서울교통공사_지하철혼잡도정보_*.csv")
-    files = glob.glob(pattern)
+    target_dates = ["20231231", "20240331", "20240630", "20241231", "20250331"]
+
+    files = []
+    repo_id = "alrq/subway"
+
+    for date_str in target_dates:
+        filename = f"서울교통공사_지하철혼잡도정보_{date_str}.csv"
+        # Filename is likely NFC
+        _filename = unicodedata.normalize("NFC", filename)
+
+        try:
+            logger.info(f"Downloading {_filename}...")
+            file_path = hf_hub_download(
+                repo_id=repo_id, filename=f"{_folder}/{_filename}", repo_type="dataset"
+            )
+            files.append(file_path)
+        except Exception as e:
+            logger.error(f"Error downloading {_filename}: {e}")
 
     if not files:
-        logger.warning(f"No files found matching pattern: {pattern}")
-        # Try finding in data/01_raw/01_congestion/ if exists?
-        # Based on file listing earlier, data/01_raw seemed to contain loose files or maybe 01_subway.
-        # Let's fallback to original hardcoded list relative to DATA_DIR if glob fails, or trust glob.
-        # The original code had "./data/01_raw/..."
-        pass
+        logger.warning("No files downloaded.")
+        return
 
     conn.execute("PRAGMA foreign_keys = ON")
 
