@@ -13,6 +13,7 @@ dependencies = [
     "kiwipiepy>=0.22.2",
     "mapclassify>=2.10.0",
     "matplotlib>=3.10.8",
+    "nbformat>=5.10.4",
     "openpyxl>=3.1.5",
     "pandas>=2.3.3",
     "plotly>=6.5.1",

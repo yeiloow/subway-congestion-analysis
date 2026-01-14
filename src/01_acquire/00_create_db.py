@@ -103,6 +103,11 @@ def main():
             "run_insert_admin_dong_mapping",
             "Step 12: Insert Admin Dong Mapping Data",
         ),
+        (
+            "11_calculate_station_catchment.py",
+            "main",
+            "Step 13: Calculate Station Catchment",
+        ),
     ]
 
     for filename, func_name, step_desc in steps:

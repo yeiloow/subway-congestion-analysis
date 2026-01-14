@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Optional, List, Union
-import os
 from huggingface_hub import snapshot_download
 
 
