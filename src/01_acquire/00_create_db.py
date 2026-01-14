@@ -109,6 +109,11 @@ def main():
             "main",
             "12단계: 역세권 계산",
         ),
+        (
+            "13_insert_station_daily_passengers.py",
+            "run_insert_daily_passengers",
+            "13단계: 역별 일별 승하차 인원 추가",
+        ),
     ]
 
     for filename, func_name, step_desc in steps:
