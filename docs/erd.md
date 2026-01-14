@@ -5,19 +5,19 @@
 ```mermaid
 erDiagram
     %% ===== 역/노선 관련 테이블 =====
-    Stations {
+    역_정보 {
         INTEGER station_id PK
         TEXT station_name_kr
     }
 
-    Lines {
+    노선_정보 {
         INTEGER line_id PK
         TEXT line_name UK
         TEXT operator
         TEXT color_hex
     }
 
-    Station_Routes {
+    역_노선_매핑 {
         INTEGER route_id PK
         INTEGER station_id FK
         INTEGER line_id FK
@@ -29,7 +29,7 @@ erDiagram
         REAL lon
     }
 
-    Station_Congestion {
+    역_혼잡도 {
         INTEGER congestion_id PK
         TEXT quarter_code
         TEXT station_code FK
@@ -39,7 +39,7 @@ erDiagram
         REAL congestion_level
     }
 
-    Station_Catchment_Buildings {
+    역세권_건물_정보 {
         INTEGER id PK
         INTEGER station_id FK
         TEXT building_name
@@ -54,12 +54,12 @@ erDiagram
     }
 
     %% ===== 행정동 관련 테이블 =====
-    Admin_Dong_Mapping {
+    행정동_매핑 {
         TEXT admin_dong_code PK
         TEXT admin_dong_name
     }
 
-    Dong_Workplace_Population {
+    행정동_직장인구 {
         INTEGER id PK
         TEXT quarter_code
         TEXT admin_dong_code
@@ -75,7 +75,7 @@ erDiagram
         INTEGER age_60_over_pop
     }
 
-    Dong_Floating_Population {
+    행정동_유동인구 {
         INTEGER id PK
         TEXT quarter_code
         TEXT admin_dong_code
@@ -91,7 +91,7 @@ erDiagram
         INTEGER time_21_24_floating_pop
     }
 
-    Dong_Estimated_Revenue {
+    행정동_추정매출 {
         INTEGER id PK
         TEXT quarter_code
         TEXT admin_dong_code
@@ -104,7 +104,7 @@ erDiagram
         REAL weekend_sales_amt
     }
 
-    Dong_Living_Population {
+    행정동_생활인구 {
         INTEGER id PK
         TEXT base_date "YYYYMMDD"
         TEXT time_slot "HH"
@@ -117,7 +117,7 @@ erDiagram
     }
 
     %% ===== 열차/분석 테이블 =====
-    Subway_Timetable {
+    지하철_시간표 {
         INTEGER id PK
         INTEGER source_id
         INTEGER line_id FK
@@ -133,56 +133,14 @@ erDiagram
         TEXT destination_station
     }
 
-    Impact_Analysis_OptionA {
-        INTEGER id PK
-        TEXT base_date "YYYY-MM-DD"
-        TEXT line_name
-        TEXT station_name
-        TEXT station_name_normalized
-        TEXT day_of_week
-        TEXT category
-        INTEGER boarding_count
-        INTEGER alighting_count
-        INTEGER total_count
-        REAL increase_rate
-        TEXT increase_status
-    }
-
-    %% ===== 관계 정의 =====
-    Stations ||--o{ Station_Routes : "has"
-    Lines ||--o{ Station_Routes : "contains"
-    Station_Routes ||--o{ Station_Congestion : "station_code"
-    Stations ||--o{ Station_Catchment_Buildings : "station_id"
-
-    %% Subway_Timetable 연결
-    Station_Routes ||--o{ Subway_Timetable : "station_code"
-    Lines ||--o{ Subway_Timetable : "line_id"
-
-    %% Admin_Dong_Mapping 연결
-    Admin_Dong_Mapping ||--o{ Station_Routes : "admin_dong_code"
-    Admin_Dong_Mapping ||--o{ Dong_Workplace_Population : "admin_dong_code"
-    Admin_Dong_Mapping ||--o{ Dong_Floating_Population : "admin_dong_code"
-    Admin_Dong_Mapping ||--o{ Dong_Estimated_Revenue : "admin_dong_code"
-    Admin_Dong_Mapping ||--o{ Dong_Living_Population : "admin_dong_code"
-
-    %% Dong 테이블 간 논리적 연결
-    Dong_Workplace_Population }o..o{ Dong_Floating_Population : "admin_dong_code"
-    Dong_Floating_Population }o..o{ Dong_Estimated_Revenue : "admin_dong_code"
-    Dong_Estimated_Revenue }o..o{ Dong_Living_Population : "admin_dong_code"
-```
-
-## Weather Database (weather_schema.sql)
-
-```mermaid
-erDiagram
-    Daily_Temperature {
+    일별_기온 {
         INTEGER id PK
         TEXT base_date UK "YYYYMMDD"
         REAL min_temp
         REAL max_temp
     }
 
-    Hourly_Weather {
+    시간별_날씨 {
         INTEGER id PK
         TEXT base_date "YYYYMMDD"
         INTEGER hour
@@ -192,7 +150,35 @@ erDiagram
     }
 
     %% 날짜 기반 논리적 연결
-    Daily_Temperature ||--o{ Hourly_Weather : "base_date"
+    일별_기온 ||--o{ 시간별_날씨 : "base_date"
+
+    %% ===== 관계 정의 =====
+    역_정보 ||--o{ 역_노선_매핑 : "has"
+    노선_정보 ||--o{ 역_노선_매핑 : "contains"
+    역_노선_매핑 ||--o{ 역_혼잡도 : "station_code"
+    역_정보 ||--o{ 역세권_건물_정보 : "station_id"
+
+    %% Subway_Timetable 연결
+    역_노선_매핑 ||--o{ 지하철_시간표 : "station_code"
+    노선_정보 ||--o{ 지하철_시간표 : "line_id"
+
+    %% Admin_Dong_Mapping 연결
+    행정동_매핑 ||--o{ 역_노선_매핑 : "admin_dong_code"
+    행정동_매핑 ||--o{ 행정동_직장인구 : "admin_dong_code"
+    행정동_매핑 ||--o{ 행정동_유동인구 : "admin_dong_code"
+    행정동_매핑 ||--o{ 행정동_추정매출 : "admin_dong_code"
+    행정동_매핑 ||--o{ 행정동_생활인구 : "admin_dong_code"
+
+    %% Dong 테이블 간 논리적 연결
+    행정동_직장인구 }o..o{ 행정동_유동인구 : "admin_dong_code"
+    행정동_유동인구 }o..o{ 행정동_추정매출 : "admin_dong_code"
+    행정동_추정매출 }o..o{ 행정동_생활인구 : "admin_dong_code"
+```
+
+## Weather Database (weather_schema.sql)
+
+```mermaid
+
 ```
 
 ## 관계 설명
@@ -201,25 +187,25 @@ erDiagram
 
 | 관계 | 설명 |
 |------|------|
-| Stations → Station_Routes | 하나의 역이 여러 노선에 존재 가능 (1:N) |
-| Lines → Station_Routes | 하나의 노선에 여러 역 존재 (1:N) |
-| Station_Routes → Station_Congestion | 노선별 역에 시간대/요일별 혼잡도 데이터 (1:N) |
-| Stations → Station_Catchment_Buildings | 역별 역세권 건물 정보 (1:N) |
-| Station_Routes → Subway_Timetable | `station_code`로 역별 열차 시간표 연결 (1:N) |
-| Lines → Subway_Timetable | `line_id`로 호선별 열차 시간표 연결 (1:N) |
-| Admin_Dong_Mapping → Dong_* | 행정동 코드 마스터 테이블 (1:N) |
-| Admin_Dong_Mapping → Station_Routes | 역의 행정동 정보 연결 (1:N) |
+| 역_정보 → 역_노선_매핑 | 하나의 역이 여러 노선에 존재 가능 (1:N) |
+| 노선_정보 → 역_노선_매핑 | 하나의 노선에 여러 역 존재 (1:N) |
+| 역_노선_매핑 → 역_혼잡도 | 노선별 역에 시간대/요일별 혼잡도 데이터 (1:N) |
+| 역_정보 → 역세권_건물_정보 | 역별 역세권 건물 정보 (1:N) |
+| 역_노선_매핑 → 지하철_시간표 | `station_code`로 역별 열차 시간표 연결 (1:N) |
+| 노선_정보 → 지하철_시간표 | `line_id`로 호선별 열차 시간표 연결 (1:N) |
+| 행정동_매핑 → 행정동_* | 행정동 코드 마스터 테이블 (1:N) |
+| 행정동_매핑 → 역_노선_매핑 | 역의 행정동 정보 연결 (1:N) |
 
 ### Weather Database
 
 | 관계 | 설명 |
 |------|------|
-| Daily_Temperature → Hourly_Weather | 일별 기온과 시간대별 기상정보 (1:N, `base_date` 기준) |
+| 일별_기온 → 시간별_날씨 | 일별 기온과 시간대별 기상정보 (1:N, `base_date` 기준) |
 
 ### Cross-Database 연결
 
 | Main DB | Weather DB | 연결 키 |
 |---------|------------|---------|
-| Dong_Living_Population | Daily_Temperature | `base_date` |
-| Dong_Living_Population | Hourly_Weather | `base_date` + `time_slot` |
-| Impact_Analysis_OptionA | Daily_Temperature | `base_date` |
+| 행정동_생활인구 | 일별_기온 | `base_date` |
+| 행정동_생활인구 | 시간별_날씨 | `base_date` + `time_slot` |
+| Impact_Analysis_OptionA | 일별_기온 | `base_date` |

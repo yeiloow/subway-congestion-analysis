@@ -245,9 +245,50 @@ CREATE TABLE IF NOT EXISTS Station_Daily_Passengers (
     UNIQUE(usage_date, line_name, station_name)
 );
 
+-- 11. 역세권 건물 정보
+CREATE TABLE IF NOT EXISTS Station_Catchment_Buildings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER NOT NULL,
+    building_name TEXT,       -- A24 (건물명)
+    building_detail_name TEXT,-- A25 (상세건물명)
+    usage_type TEXT,          -- A9 (주용도)
+    structure_type TEXT,      -- A11 (구조)
+    approval_date TEXT,       -- A13 (사용승인일)
+    height REAL,              -- A16 (높이)
+    floor_area REAL,          -- A18 (연면적)
+    households INTEGER,       -- A26 (세대수)
+    families INTEGER,         -- A27 (가구수)
+    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE
+);
 
 
--- 12. 영향 분석 결과 (Option A)
+-- 12. 일별 기온 (최저/최고)
+CREATE TABLE IF NOT EXISTS Daily_Temperature (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    base_date TEXT NOT NULL, -- YYYYMMDD
+    min_temp REAL,
+    max_temp REAL,
+    UNIQUE(base_date)
+);
+
+-- 13. 시간대별 기상정보
+CREATE TABLE IF NOT EXISTS Hourly_Weather (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    base_date TEXT NOT NULL, -- YYYYMMDD
+    hour INTEGER NOT NULL,
+    temperature REAL,
+    rain_prob REAL,
+    rain_type REAL,
+    UNIQUE(base_date, hour)
+);
+
+-- 14. 행정동 코드 매핑
+CREATE TABLE IF NOT EXISTS Admin_Dong_Mapping (
+    admin_dong_code TEXT PRIMARY KEY,
+    admin_dong_name TEXT NOT NULL
+);
+
+-- 15. 영향 분석 결과 (Option A)
 CREATE TABLE IF NOT EXISTS Impact_Analysis_OptionA (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     base_date TEXT NOT NULL, -- 날짜 (YYYY-MM-DD)
@@ -265,26 +306,4 @@ CREATE TABLE IF NOT EXISTS Impact_Analysis_OptionA (
     increase_rate REAL, -- 상승률_%
     increase_status TEXT, -- 상승여부
     UNIQUE(base_date, line_name, station_name, category)
-);
-
--- 13. 역세권 건물 정보
-CREATE TABLE IF NOT EXISTS Station_Catchment_Buildings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    station_id INTEGER NOT NULL,
-    building_name TEXT,       -- A24 (건물명)
-    building_detail_name TEXT,-- A25 (상세건물명)
-    usage_type TEXT,          -- A9 (주용도)
-    structure_type TEXT,      -- A11 (구조)
-    approval_date TEXT,       -- A13 (사용승인일)
-    height REAL,              -- A16 (높이)
-    floor_area REAL,          -- A18 (연면적)
-    households INTEGER,       -- A26 (세대수)
-    families INTEGER,         -- A27 (가구수)
-    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE
-);
-
--- 14. 행정동 코드 매핑
-CREATE TABLE IF NOT EXISTS Admin_Dong_Mapping (
-    admin_dong_code TEXT PRIMARY KEY,
-    admin_dong_name TEXT NOT NULL
 );
