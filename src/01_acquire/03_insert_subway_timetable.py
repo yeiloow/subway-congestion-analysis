@@ -11,9 +11,9 @@ def run_insert_subway_timetable():
     from huggingface_hub import hf_hub_download
 
     # Folder "01_raw/열차운행시각표" is NFD
-    _folder = unicodedata.normalize("NFD", "01_raw/열차운행시각표")
+    _folder = unicodedata.normalize("NFC", "01_raw/열차운행시각표")
     _filename = unicodedata.normalize(
-        "NFC", "서울교통공사_도시철도열차운행시각표(250930).csv"
+        "NFC", "서울교통공사_서울_도시철도_열차운행시각표_20250704.csv"
     )
     repo_id = "alrq/subway"
 
@@ -36,7 +36,7 @@ def run_insert_subway_timetable():
     try:
         # Load dataset
         # Using utf-8 as determined by inspection
-        df = pd.read_csv(file_path, encoding="utf-8")
+        df = pd.read_csv(file_path, encoding="euc-kr")
 
         # Rename columns to match schema
         column_mapping = {
