@@ -20,7 +20,7 @@ def run_insert_daily_passengers():
     from huggingface_hub import hf_hub_download
 
     # Folder "01_raw/지하철혼잡도" is NFD
-    _folder = unicodedata.normalize("NFD", "01_raw/지하철혼잡도")
+    _folder = unicodedata.normalize("NFD", "01_raw/승하차인원")
     # Filename is likely NFC
     _filename = unicodedata.normalize(
         "NFC", "서울시_역별_승하차_인원_정보_2023_2025.csv"
