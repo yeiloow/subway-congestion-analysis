@@ -13,7 +13,7 @@ def run_insert_subway_timetable():
     # Folder "01_raw/열차운행시각표" is NFD
     _folder = unicodedata.normalize("NFD", "01_raw/열차운행시각표")
     _filename = unicodedata.normalize(
-        "NFC", "서울교통공사_서울 도시철도 열차운행시각표_20250704.csv"
+        "NFC", "서울교통공사_도시철도열차운행시각표(250930).csv"
     )
     repo_id = "alrq/subway"
 
