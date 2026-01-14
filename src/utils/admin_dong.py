@@ -18,7 +18,7 @@ def get_admin_dong(address, api_key):
     ).json()
 
     if not response_search["documents"]:
-        return "주소 확인 불가"
+        return "주소 확인 불가", None
 
     # 좌표 추출 (x: 경도, y: 위도)
     x = response_search["documents"][0]["x"]
@@ -32,9 +32,9 @@ def get_admin_dong(address, api_key):
     # 행정동(region_type='H') 추출
     for doc in response_geo["documents"]:
         if doc["region_type"] == "H":
-            return doc["region_3depth_name"]  # 행정동 명칭 (예: 역삼1동)
+            return doc["region_3depth_name"], doc["code"]  # 행정동 명칭, 행정동 코드
 
-    return "행정동 정보 없음"
+    return "행정동 정보 없음", None
 
 
 if __name__ == "__main__":

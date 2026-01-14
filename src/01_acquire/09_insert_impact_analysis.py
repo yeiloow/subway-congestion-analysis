@@ -2,18 +2,25 @@ from src.utils.config import DATA_DIR, LOG_FORMAT, LOG_LEVEL
 import pandas as pd
 import logging
 from src.utils.db_util import get_connection
+from huggingface_hub import hf_hub_download
 
 # Configure Logging
 logger = logging.getLogger(__name__)
 
 
 def run_insert_impact_analysis():
-    # File paths
-    input_file = DATA_DIR / "final_impact_analysis_optionA_total_보완점 포함.csv"
+    # Download file from Hugging Face Hub
+    repo_id = "alrq/subway"
+    filename = "03_final/이벤트_지하철혼잡도_영향도_분석.csv"
 
-    # Check if input file exists
-    if not input_file.exists():
-        logger.error(f"Error: Input file '{input_file}' not found.")
+    logger.info(f"Downloading {filename} from {repo_id}...")
+    try:
+        input_file = hf_hub_download(
+            repo_id=repo_id, filename=filename, repo_type="dataset"
+        )
+        logger.info(f"File downloaded to: {input_file}")
+    except Exception as e:
+        logger.error(f"Error downloading file from Hugging Face: {e}")
         return
 
     # Load data

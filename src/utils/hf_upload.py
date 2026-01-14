@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 import os
-from huggingface_hub import HfApi, login
+from huggingface_hub import HfApi
 
 
 def upload_to_hf(

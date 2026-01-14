@@ -10,6 +10,11 @@ DB_NAME = "subway.db"
 DB_PATH = DB_DIR / DB_NAME
 DB_URL = f"sqlite:///{DB_PATH}"
 
+# Weather Database Config
+WEATHER_DB_NAME = "weather.db"
+WEATHER_DB_PATH = DB_DIR / WEATHER_DB_NAME
+WEATHER_DB_URL = f"sqlite:///{WEATHER_DB_PATH}"
+
 # Data Config
 DATA_DIR = PROJECT_ROOT / "data"
 
