@@ -106,7 +106,7 @@ def main():
             "12단계: 행정동 매핑 데이터 추가",
         ),
         (
-            "11_calculate_station_catchment.py",
+            "11_insert_station_catchment_buildings.py",
             "main",
             "13단계: 역세권 계산",
         ),
