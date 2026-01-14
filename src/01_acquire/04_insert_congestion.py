@@ -211,7 +211,7 @@ def run_insert_congestion():
     from huggingface_hub import hf_hub_download
 
     # Folder "01_raw/지하철혼잡도" is NFD
-    _folder = unicodedata.normalize("NFD", "01_raw/지하철혼잡도")
+    _folder = unicodedata.normalize("NFC", "01_raw/지하철혼잡도")
 
     target_dates = ["20231231", "20240331", "20240630", "20241231", "20250331"]
 
