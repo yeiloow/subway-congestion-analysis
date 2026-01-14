@@ -79,16 +79,16 @@ def load_and_process_data():
             # A. Fetch Congestion Data by Line & Dong
             query_congestion_by_line = f"""
                 SELECT 
-                    r.administrative_dong,
+                    r.admin_dong_name,
                     l.line_name,
                     c.quarter_code,
                     AVG(c.congestion_level) as avg_congestion
                 FROM Station_Congestion c
-                JOIN Station_Routes r ON c.station_number = r.station_number
+                JOIN Station_Routes r ON c.station_code = r.station_code
                 JOIN Lines l ON r.line_id = l.line_id
                 WHERE c.time_slot BETWEEN {start} AND {end}
                   AND l.line_name IN ('2호선', '4호선', '5호선')
-                GROUP BY r.administrative_dong, l.line_name, c.quarter_code
+                GROUP BY r.admin_dong_name, l.line_name, c.quarter_code
             """
             df_cong_by_line = pd.read_sql_query(query_congestion_by_line, conn)
             df_cong_by_line["quarter_code"] = df_cong_by_line["quarter_code"].astype(
@@ -98,7 +98,7 @@ def load_and_process_data():
             # B. Fetch Estimated Revenue Data (By Dong)
             query_revenue = f"""
                 SELECT 
-                    admin_dong_name as administrative_dong,
+                    admin_dong_name,
                     quarter_code,
                     SUM({rev_col}) as total_sales_amt
                 FROM Dong_Estimated_Revenue
@@ -110,14 +110,14 @@ def load_and_process_data():
             # C. Fetch Station Names (By Line & Dong to match A)
             query_stations = """
                 SELECT 
-                    r.administrative_dong,
+                    r.admin_dong_name,
                     l.line_name,
                     GROUP_CONCAT(DISTINCT s.station_name_kr) as station_names
                 FROM Station_Routes r
                 JOIN Lines l ON r.line_id = l.line_id
                 JOIN Stations s ON r.station_id = s.station_id
                 WHERE l.line_name IN ('2호선', '4호선', '5호선')
-                GROUP BY r.administrative_dong, l.line_name
+                GROUP BY r.admin_dong_name, l.line_name
             """
             df_stations = pd.read_sql_query(query_stations, conn)
 
@@ -126,7 +126,7 @@ def load_and_process_data():
             df_line_merged = pd.merge(
                 df_cong_by_line,
                 df_stations,
-                on=["administrative_dong", "line_name"],
+                on=["admin_dong_name", "line_name"],
                 how="left",
             )
             df_line_merged["station_names"] = df_line_merged["station_names"].fillna(
@@ -137,7 +137,7 @@ def load_and_process_data():
             df_line_final = pd.merge(
                 df_line_merged,
                 df_revenue,
-                on=["administrative_dong", "quarter_code"],
+                on=["admin_dong_name", "quarter_code"],
                 how="inner",
             )
 
@@ -145,13 +145,13 @@ def load_and_process_data():
             # Aggregate congestion: Dong, Quarter -> Mean of Lines
             # Note: We can average the 'avg_congestion' of lines.
             df_cong_combined = df_cong_by_line.groupby(
-                ["administrative_dong", "quarter_code"], as_index=False
+                ["admin_dong_name", "quarter_code"], as_index=False
             )["avg_congestion"].mean()
 
             # Aggregate station names: Join all distinct station names for the dong
             # Simple aggregation by unique names
             df_stations_combined = (
-                df_stations.groupby("administrative_dong")["station_names"]
+                df_stations.groupby("admin_dong_name")["station_names"]
                 .apply(lambda x: ", ".join(sorted(list(set(",".join(x).split(","))))))
                 .reset_index()
             )
@@ -159,13 +159,13 @@ def load_and_process_data():
             merged_combined = pd.merge(
                 df_cong_combined,
                 df_revenue,
-                on=["administrative_dong", "quarter_code"],
+                on=["admin_dong_name", "quarter_code"],
                 how="inner",
             )
             merged_combined = pd.merge(
                 merged_combined,
                 df_stations_combined,
-                on="administrative_dong",
+                on="admin_dong_name",
                 how="left",
             )
             merged_combined["station_names"] = merged_combined["station_names"].fillna(
@@ -276,7 +276,7 @@ if viz_mode == "모두 보기 (Grid)":
                 marker=dict(
                     size=8, opacity=0.6, line=dict(width=1, color="DarkSlateGrey")
                 ),
-                text=df["administrative_dong"] + " (" + df["quarter_code"] + ")",
+                text=df["admin_dong_name"] + " (" + df["quarter_code"] + ")",
                 customdata=df[["station_names"]].fillna(""),
                 hovertemplate=(
                     "<b>%{text}</b><br>"
@@ -316,7 +316,7 @@ else:
                     marker=dict(
                         size=10, opacity=0.7, line=dict(width=1, color="DarkSlateGrey")
                     ),
-                    text=df["administrative_dong"] + " (" + df["quarter_code"] + ")",
+                    text=df["admin_dong_name"] + " (" + df["quarter_code"] + ")",
                     customdata=df[["station_names"]].fillna(""),
                     hovertemplate=(
                         "<b>%{text}</b><br>"
@@ -381,7 +381,7 @@ for tab, target_line in zip(line_tabs, ["2호선", "4호선", "5호선"]):
                         line=dict(width=1, color="DarkSlateGrey"),
                         # You could color code by line if mixed, but here we separated by tabs
                     ),
-                    text=df_target["administrative_dong"]
+                    text=df_target["admin_dong_name"]
                     + " ("
                     + df_target["quarter_code"]
                     + ")",
