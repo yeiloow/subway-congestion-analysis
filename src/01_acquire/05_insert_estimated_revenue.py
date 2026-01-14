@@ -12,13 +12,26 @@ logger = logging.getLogger(__name__)
 
 def run_insert_estimated_revenue():
     # File paths
-    input_file = (
-        DATA_DIR
-        / "01_raw/07_openapi/서울시_상권분석서비스_추정매출_행정동_2023_2025.csv"
+    # File paths
+    import unicodedata
+    from huggingface_hub import hf_hub_download
+    import os
+
+    # Note: Folder "01_raw/상권분석서비스" is NFD.
+    _folder = unicodedata.normalize("NFD", "01_raw/상권분석서비스")
+    # Filename is likely NFC
+    _filename = unicodedata.normalize(
+        "NFC", "서울시_상권분석서비스_추정매출_행정동_2023_2025.csv"
+    )
+
+    input_file = hf_hub_download(
+        repo_id="alrq/subway",
+        filename=f"{_folder}/{_filename}",
+        repo_type="dataset",
     )
 
     # Check if input file exists
-    if not input_file.exists():
+    if not os.path.exists(input_file):
         logger.error(f"Error: Input file '{input_file}' not found.")
         return
 

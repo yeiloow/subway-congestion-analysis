@@ -127,17 +127,17 @@ def process_and_insert(file_path, conn):
 
     # Transform columns to match schema
 
-    # 1. Map '요일구분' to is_weekend
+    # 1. Map '요일구분' to day_of_week
     day_map = {
         "평일": 0,
         "토요일": 1,
         "일요일": 2,
         "공휴일": 2,
     }  # Added public holiday as Sunday equivalent
-    melted_df["is_weekend"] = melted_df["요일구분"].map(day_map)
+    melted_df["day_of_week"] = melted_df["요일구분"].map(day_map)
     # Filter out unmapped days if any
-    melted_df = melted_df.dropna(subset=["is_weekend"])
-    melted_df["is_weekend"] = melted_df["is_weekend"].astype(int)
+    melted_df = melted_df.dropna(subset=["day_of_week"])
+    melted_df["day_of_week"] = melted_df["day_of_week"].astype(int)
 
     # 2. Map '상하구분' to is_upline
     upline_map = {"상선": 0, "내선": 0, "하선": 1, "외선": 1}
@@ -146,8 +146,8 @@ def process_and_insert(file_path, conn):
     melted_df = melted_df.dropna(subset=["is_upline"])
     melted_df["is_upline"] = melted_df["is_upline"].astype(int)
 
-    # 3. Ensure station_number is string
-    melted_df["station_number"] = melted_df["역번호"].astype(str)
+    # 3. Ensure station_code is string
+    melted_df["station_code"] = melted_df["역번호"].astype(str)
 
     # 4. Add quarter_code
     melted_df["quarter_code"] = quarter_code
@@ -156,8 +156,8 @@ def process_and_insert(file_path, conn):
     final_df = melted_df[
         [
             "quarter_code",
-            "station_number",
-            "is_weekend",
+            "station_code",
+            "day_of_week",
             "is_upline",
             "time_slot",
             "congestion_level",
@@ -166,15 +166,13 @@ def process_and_insert(file_path, conn):
 
     # Fix wrong number
     # 까치산역 260 -> 200
-    final_df.loc[final_df["station_number"] == "260", "station_number"] = "200"
+    final_df.loc[final_df["station_code"] == "260", "station_code"] = "200"
 
     # Drop non existing stations
     final_df = final_df[
-        ~final_df["station_number"].isin(
-            ["260", "9001", "9002", "9003", "9005", "9006"]
-        )
+        ~final_df["station_code"].isin(["260", "9001", "9002", "9003", "9005", "9006"])
     ]
-    final_df.dropna(subset=["station_number"], inplace=True)
+    final_df.dropna(subset=["station_code"], inplace=True)
 
     # Clean non-numeric congestion levels (just in case)
     final_df["congestion_level"] = pd.to_numeric(
@@ -182,12 +180,12 @@ def process_and_insert(file_path, conn):
     )
     final_df.dropna(subset=["congestion_level"], inplace=True)
 
-    # VALIDATION: Check if all station_numbers exist in Station_Routes
-    valid_stations_df = pd.read_sql("SELECT station_number FROM Station_Routes", conn)
-    valid_stations = set(valid_stations_df["station_number"].astype(str))
+    # VALIDATION: Check if all station_codes exist in Station_Routes
+    valid_stations_df = pd.read_sql("SELECT station_code FROM Station_Routes", conn)
+    valid_stations = set(valid_stations_df["station_code"].astype(str))
 
     # Filter final_df to only include valid stations
-    final_df = final_df[final_df["station_number"].isin(valid_stations)]
+    final_df = final_df[final_df["station_code"].isin(valid_stations)]
 
     try:
         # Insert into Station_Congestion
@@ -214,7 +212,7 @@ def run_insert_congestion():
     # Or just *.csv but being specific is safer
 
     # Check if directory exists
-    raw_data_dir = DATA_DIR / "01_raw/02_congestion"
+    raw_data_dir = DATA_DIR / "01_raw"
     if not raw_data_dir.exists():
         logger.error(f"Directory not found: {raw_data_dir}")
         return

@@ -31,7 +31,7 @@ def check_diff():
     except UnicodeDecodeError:
         df_2024 = pd.read_csv(file_path_2024, encoding="utf-8")
 
-    # Extract unique (station_number, station_name) pairs
+    # Extract unique (station_code, station_name) pairs
     # Assuming columns are '역번호' and '출발역' based on previous inspection
     cols = ["역번호", "출발역"]
 

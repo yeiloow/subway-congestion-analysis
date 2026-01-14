@@ -19,27 +19,28 @@ CREATE TABLE IF NOT EXISTS Station_Routes (
     route_id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER NOT NULL,
     line_id INTEGER NOT NULL,
-    station_number TEXT NOT NULL UNIQUE,
+    station_code TEXT NOT NULL UNIQUE,
     road_address TEXT,
-    administrative_dong TEXT,
+    admin_dong_code TEXT,
+    admin_dong_name TEXT,
     lat REAL,
     lon REAL,
     FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE,
     FOREIGN KEY (line_id) REFERENCES Lines(line_id) ON DELETE CASCADE,
-    UNIQUE(line_id, station_id, station_number)
+    UNIQUE(line_id, station_id, station_code)
 );
 
 --- 4. 역별 혼잡도
 CREATE TABLE IF NOT EXISTS Station_Congestion (
     congestion_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quarter_code TEXT NOT NULL, -- 연분기코드 ex) 20241
-    station_number TEXT NOT NULL,
-    is_weekend INTEGER NOT NULL, -- 요일 구분 0: 평일, 1: 토요일, 2: 일요일
-    is_upline INTEGER NOT NULL, -- 상행 구분 0: 하행, 1: 상행
+    quarter_code TEXT NOT NULL,
+    station_code TEXT NOT NULL,
+    day_of_week INTEGER NOT NULL, -- 0: 평일, 1: 토요일, 2: 일요일
+    is_upline INTEGER NOT NULL,
     time_slot INTEGER NOT NULL, -- 05:30 = 1, 06:00 = 2, ...
     congestion_level REAL NOT NULL,
-    FOREIGN KEY (station_number) REFERENCES Station_Routes(station_number) ON DELETE CASCADE,
-    UNIQUE(station_number, quarter_code, is_weekend, is_upline, time_slot)
+    FOREIGN KEY (station_code) REFERENCES Station_Routes(station_code) ON DELETE CASCADE,
+    UNIQUE(station_code, quarter_code, day_of_week, is_upline, time_slot)
 );
 
 -- 5. 행정동별 직장인구
@@ -212,18 +213,24 @@ CREATE TABLE IF NOT EXISTS Dong_Living_Population (
     UNIQUE(base_date, time_slot, admin_dong_code)
 );
 
--- 9. 역세권 건물 통계
-CREATE TABLE IF NOT EXISTS Station_Catchment_Building_Stats (
+-- 9. 열차운행시각표
+CREATE TABLE IF NOT EXISTS Subway_Timetable (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    station_id INTEGER NOT NULL,
-    line_id INTEGER NOT NULL,
-    usage_type TEXT NOT NULL, -- 건축물 주용도
-    total_area REAL DEFAULT 0, -- 연면적 합계
-    total_households INTEGER DEFAULT 0, -- 총 세대 수
-    total_families INTEGER DEFAULT 0, -- 총 가구 수
-    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE,
+    source_id INTEGER, -- 고유번호
+    line_id INTEGER NOT NULL, -- 호선ID
+    station_code TEXT NOT NULL, -- 역사코드
+    station_name TEXT NOT NULL, -- 역사명
+    day_type TEXT NOT NULL, -- 주중주말 (DAY, SAT, END)
+    direction TEXT NOT NULL, -- 방향 (UP, DOWN, IN, OUT)
+    is_express INTEGER NOT NULL, -- 급행여부 (0, 1)
+    train_number TEXT NOT NULL, -- 열차코드
+    arrival_time TEXT, -- 열차도착시간 (HH:MM:SS)
+    departure_time TEXT, -- 열차출발시간 (HH:MM:SS)
+    origin_station TEXT, -- 출발역
+    destination_station TEXT, -- 도착역
+    FOREIGN KEY (station_code) REFERENCES Station_Routes(station_code) ON DELETE CASCADE,
     FOREIGN KEY (line_id) REFERENCES Lines(line_id) ON DELETE CASCADE,
-    UNIQUE(station_id, line_id, usage_type)
+    UNIQUE(line_id, station_code, day_type, direction, train_number)
 );
 
 -- 10. 역별 일별 승하차 인원
@@ -236,4 +243,48 @@ CREATE TABLE IF NOT EXISTS Station_Daily_Passengers (
     alighting_count INTEGER DEFAULT 0, -- 하차총승객수
     registration_date TEXT, -- 등록일자
     UNIQUE(usage_date, line_name, station_name)
+);
+
+
+
+-- 12. 영향 분석 결과 (Option A)
+CREATE TABLE IF NOT EXISTS Impact_Analysis_OptionA (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    base_date TEXT NOT NULL, -- 날짜 (YYYY-MM-DD)
+    line_name TEXT NOT NULL, -- 호선
+    station_name TEXT NOT NULL, -- 역명
+    station_name_normalized TEXT, -- 역명_정규화
+    day_of_week TEXT, -- 요일
+    category TEXT, -- 카테고리
+    boarding_count INTEGER, -- 승차
+    alighting_count INTEGER, -- 하차
+    total_count INTEGER, -- 승하차합계
+    avg_boarding_count REAL, -- 평균_승차
+    avg_alighting_count REAL, -- 평균_하차
+    avg_total_count REAL, -- 평균_승하차합계
+    increase_rate REAL, -- 상승률_%
+    increase_status TEXT, -- 상승여부
+    UNIQUE(base_date, line_name, station_name, category)
+);
+
+-- 13. 역세권 건물 정보
+CREATE TABLE IF NOT EXISTS Station_Catchment_Buildings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER NOT NULL,
+    building_name TEXT,       -- A24 (건물명)
+    building_detail_name TEXT,-- A25 (상세건물명)
+    usage_type TEXT,          -- A9 (주용도)
+    structure_type TEXT,      -- A11 (구조)
+    approval_date TEXT,       -- A13 (사용승인일)
+    height REAL,              -- A16 (높이)
+    floor_area REAL,          -- A18 (연면적)
+    households INTEGER,       -- A26 (세대수)
+    families INTEGER,         -- A27 (가구수)
+    FOREIGN KEY (station_id) REFERENCES Stations(station_id) ON DELETE CASCADE
+);
+
+-- 14. 행정동 코드 매핑
+CREATE TABLE IF NOT EXISTS Admin_Dong_Mapping (
+    admin_dong_code TEXT PRIMARY KEY,
+    admin_dong_name TEXT NOT NULL
 );

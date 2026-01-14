@@ -45,32 +45,63 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Define steps
+
     steps = [
         ("01_init_db.py", "run_init_db", "Step 1: Initialize Database"),
+        (
+            "01_init_db.py",
+            "run_init_weather_db",
+            "Step 1-1: Initialize Weather Database",
+        ),
         (
             "02_insert_subway.py",
             "run_insert_subway",
             "Step 2: Insert Subway Information",
         ),
         (
+            "06_insert_subway_timetable.py",
+            "run_insert_subway_timetable",
+            "Step 4: Insert Subway Timetable",
+        ),
+        (
             "03_insert_congestion.py",
             "run_insert_congestion",
-            "Step 3: Insert Congestion Data",
+            "Step 5: Insert Congestion Data",
+        ),
+        (
+            "03_insert_job_population.py",
+            "run_insert_job_population",
+            "Step 6: Insert Job Population Data",
         ),
         (
             "04_insert_floating_population.py",
             "run_insert_floating_population",
-            "Step 4: Insert Floating Population Data",
+            "Step 7: Insert Floating Population Data",
         ),
         (
             "04_insert_living_population.py",
             "run_insert_living_population",
-            "Step 5: Insert Living Population Data",
+            "Step 8: Insert Living Population Data",
         ),
         (
             "05_insert_estimated_revenue.py",
             "run_insert_estimated_revenue",
-            "Step 6: Insert Estimated Revenue Data",
+            "Step 9: Insert Estimated Revenue Data",
+        ),
+        (
+            "07_insert_weather.py",
+            "run_insert_weather",
+            "Step 10: Insert Weather Data",
+        ),
+        (
+            "09_insert_impact_analysis.py",
+            "run_insert_impact_analysis",
+            "Step 11: Insert Impact Analysis Data",
+        ),
+        (
+            "10_insert_admin_dong_mapping.py",
+            "run_insert_admin_dong_mapping",
+            "Step 12: Insert Admin Dong Mapping Data",
         ),
     ]
 
