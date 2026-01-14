@@ -1,19 +1,19 @@
 import csv
 import logging
-from src.utils.db_util import get_connection
-from src.utils.admin_dong import get_admin_dong
-from src.utils.config import DATA_DIR, OUTPUT_DIR, LOG_FORMAT, LOG_LEVEL
-from dotenv import load_dotenv
 import os
 import time
+import unicodedata
+
+from dotenv import load_dotenv
+from huggingface_hub import hf_hub_download
+
+from src.utils.admin_dong import get_admin_dong
+from src.utils.config import DATA_DIR, LOG_FORMAT, LOG_LEVEL, OUTPUT_DIR
+from src.utils.db_util import get_connection
 
 # Configure Logging
 # logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
-
-# Define file paths
-import unicodedata
-from huggingface_hub import hf_hub_download
 
 # Define file paths
 # Note: Filenames in HF repo have mixed normalizations.
@@ -42,9 +42,9 @@ KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
 
 def load_reference_data():
     """
-    Load reference data (lat, lon) from the master file.
-    Returns a dict: key=(line_name, station_code_str), value=(lat, lon)
-    Also creates a secondary lookup: key=(line_name, station_name), value=(lat, lon)
+    마스터 파일에서 참조 데이터(위도, 경도)를 로드합니다.
+    딕셔너리를 반환합니다: key=(노선명, 역코드_문자열), value=(위도, 경도)
+    또한 보조 조회용 딕셔너리를 생성합니다: key=(노선명, 역명), value=(위도, 경도)
     """
     ref_by_code = {}
     ref_by_name = {}

@@ -19,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 def import_module_from_path(module_name, file_path):
     """
-    Dynamically import a module from a file path.
-    This is necessary because the directory and file names start with numbers,
-    which are not valid Python identifiers for standard imports.
+    파일 경로에서 모듈을 동적으로 가져옵니다.
+    디렉토리와 파일 이름이 숫자로 시작하여 표준 import 방식으로는 유효한 Python 식별자가 아니므로 이 작업이 필요합니다.
     """
     try:
         spec = importlib.util.spec_from_file_location(module_name, file_path)

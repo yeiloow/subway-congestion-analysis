@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def get_engine():
     """
-    Creates and returns a SQLAlchemy engine for the subway database.
+    지하철 데이터베이스를 위한 SQLAlchemy 엔진을 생성하고 반환합니다.
     """
     try:
         engine = create_engine(DB_URL)
@@ -20,8 +20,8 @@ def get_engine():
 
 def get_connection():
     """
-    Returns a raw sqlite3 connection.
-    Useful for scripts that don't need the full ORM or for bulk inserts where raw SQL might be preferred.
+    raw sqlite3 연결을 반환합니다.
+    전체 ORM이 필요하지 않은 스크립트나 raw SQL이 선호될 수 있는 대량 삽입(bulk insert)에 유용합니다.
     """
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -33,7 +33,7 @@ def get_connection():
 
 def get_weather_engine():
     """
-    Creates and returns a SQLAlchemy engine for the weather database.
+    날씨 데이터베이스를 위한 SQLAlchemy 엔진을 생성하고 반환합니다.
     """
     try:
         from src.utils.config import WEATHER_DB_URL
@@ -47,7 +47,7 @@ def get_weather_engine():
 
 def get_weather_connection():
     """
-    Returns a raw sqlite3 connection for the weather database.
+    날씨 데이터베이스를 위한 raw sqlite3 연결을 반환합니다.
     """
     try:
         from src.utils.config import WEATHER_DB_PATH
