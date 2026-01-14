@@ -26,20 +26,22 @@ def import_module_from_path(module_name, file_path):
     try:
         spec = importlib.util.spec_from_file_location(module_name, file_path)
         if spec is None:
-            logger.error(f"Could not load spec for {module_name} from {file_path}")
+            logger.error(f"{file_path}에서 {module_name}의 spec을 로드할 수 없습니다")
             return None
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
         return module
     except Exception as e:
-        logger.error(f"Failed to import {module_name} from {file_path}: {e}")
+        logger.error(
+            f"{file_path}에서 {module_name}을(를) 가져오는 데 실패했습니다: {e}"
+        )
         return None
 
 
 def main():
     start_time = time.time()
-    logger.info("Starting Database Creation and Population Process...")
+    logger.info("데이터베이스 생성 및 데이터 적재 프로세스를 시작합니다...")
 
     # Get current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,66 +49,66 @@ def main():
     # Define steps
 
     steps = [
-        ("01_init_db.py", "run_init_db", "Step 1: Initialize Database"),
+        ("01_init_db.py", "run_init_db", "1단계: 데이터베이스 초기화"),
         (
             "01_init_db.py",
             "run_init_weather_db",
-            "Step 1-1: Initialize Weather Database",
+            "1-1단계: 날씨 데이터베이스 초기화",
         ),
         (
             "02_insert_subway.py",
             "run_insert_subway",
-            "Step 2: Insert Subway Information",
+            "2단계: 지하철 정보 추가",
         ),
         (
             "06_insert_subway_timetable.py",
             "run_insert_subway_timetable",
-            "Step 4: Insert Subway Timetable",
+            "4단계: 지하철 시간표 추가",
         ),
         (
             "03_insert_congestion.py",
             "run_insert_congestion",
-            "Step 5: Insert Congestion Data",
+            "5단계: 혼잡도 데이터 추가",
         ),
         (
             "03_insert_job_population.py",
             "run_insert_job_population",
-            "Step 6: Insert Job Population Data",
+            "6단계: 직장인구 데이터 추가",
         ),
         (
             "04_insert_floating_population.py",
             "run_insert_floating_population",
-            "Step 7: Insert Floating Population Data",
+            "7단계: 유동인구 데이터 추가",
         ),
         (
             "04_insert_living_population.py",
             "run_insert_living_population",
-            "Step 8: Insert Living Population Data",
+            "8단계: 생활인구 데이터 추가",
         ),
         (
             "05_insert_estimated_revenue.py",
             "run_insert_estimated_revenue",
-            "Step 9: Insert Estimated Revenue Data",
+            "9단계: 추정 매출 데이터 추가",
         ),
         (
             "07_insert_weather.py",
             "run_insert_weather",
-            "Step 10: Insert Weather Data",
+            "10단계: 날씨 데이터 추가",
         ),
         (
             "09_insert_impact_analysis.py",
             "run_insert_impact_analysis",
-            "Step 11: Insert Impact Analysis Data",
+            "11단계: 영향 분석 데이터 추가",
         ),
         (
             "10_insert_admin_dong_mapping.py",
             "run_insert_admin_dong_mapping",
-            "Step 12: Insert Admin Dong Mapping Data",
+            "12단계: 행정동 매핑 데이터 추가",
         ),
         (
             "11_calculate_station_catchment.py",
             "main",
-            "Step 13: Calculate Station Catchment",
+            "13단계: 역세권 계산",
         ),
     ]
 
@@ -122,14 +124,14 @@ def main():
                 func = getattr(module, func_name)
                 func()
             except Exception as e:
-                logger.error(f"Error executing {func_name} in {filename}: {e}")
+                logger.error(f"{filename}의 {func_name} 실행 중 오류 발생: {e}")
                 # Decide whether to continue or stop. For now, we continue but mark failure.
         else:
-            logger.error(f"Could not find function '{func_name}' in {filename}")
+            logger.error(f"{filename}에서 '{func_name}' 함수를 찾을 수 없습니다")
 
     elapsed_time = time.time() - start_time
     logger.info(
-        f"All steps completed (check logs for errors) in {elapsed_time:.2f} seconds."
+        f"모든 단계가 완료되었습니다 (오류는 로그를 확인하세요). 소요 시간: {elapsed_time:.2f}초"
     )
 
 
